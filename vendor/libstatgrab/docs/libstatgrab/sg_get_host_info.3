@@ -1,0 +1,143 @@
+'\" t -*- coding: us-ascii -*-
+.if \n(.g .ds T< \\FC
+.if \n(.g .ds T> \\F[\n[.fam]]
+.de URL
+\\$2 \(la\\$1\(ra\\$3
+..
+.if \n(.g .mso www.tmac
+.TH sg_get_host_info 3 2019-03-08 libstatgrab ""
+.SH NAME
+sg_get_host_info, sg_get_host_info_r, sg_free_host_info \- get general operating system statistics
+.SH SYNOPSIS
+'nh
+.nf
+\*(T<#include <statgrab.h>\*(T>
+.fi
+.sp 1
+.PP
+.fi
+.ad l
+\*(T<sg_host_info *\fBsg_get_host_info\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(size_t *\fIentries\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_host_info *\fBsg_get_host_info_r\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(size_t *\fIentries\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_error \fBsg_free_host_info\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(sg_host_info *\fIdata\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+'hy
+.SH DESCRIPTION
+These calls return details on the operating system and the machine
+it's running on.
+.PP
+\fBAPI Shortcut\fR
+.TS
+allbox ;
+l | l | l.
+T{
+function
+T}	T{
+returns
+T}	T{
+data owner
+T}
+.T&
+l | l | l
+l | l | l.
+T{
+sg_get_host_info
+T}	T{
+\*(T<sg_host_info\*(T> *
+T}	T{
+libstatgrab (thread local)
+T}
+T{
+sg_get_host_info_r
+T}	T{
+\*(T<sg_host_info\*(T> *
+T}	T{
+caller
+T}
+.TE
+.PP
+The \*(T<sg_host_info\*(T> buffer received from
+\*(T<\fBsg_get_host_info_r\fR\*(T>() must be freed using
+\*(T<\fBsg_free_host_info\fR\*(T>() when not needed any more. The
+caller is responsible for doing it.
+.SH "RETURN VALUES"
+The structure returned is of type
+\*(T<sg_host_info\*(T>.
+.PP
+.nf
+\*(T<
+typedef enum {
+        sg_unknown_configuration = 0,
+        sg_physical_host,
+        sg_virtual_machine,
+        sg_paravirtual_machine,
+        sg_hardware_virtualized
+} sg_host_state;
+    \*(T>
+.fi
+.PP
+.nf
+\*(T<
+typedef struct{
+        char *os_name;
+        char *os_release;
+        char *os_version;
+        char *platform;
+        char *hostname;
+        unsigned bitwidth;
+        sg_host_state host_state;
+        unsigned ncpus;
+        unsigned maxcpus;
+        time_t uptime;
+        time_t systime;
+}sg_host_info;
+    \*(T>
+.fi
+.TP 
+\*(T<os_name\*(T>
+The operating system name.
+(eg. SunOS or Linux)
+.TP 
+\*(T<os_release\*(T>
+The operating system release.
+(eg. 5.8 or 5.9 or Solaris)
+.TP 
+\*(T<os_version\*(T>
+The version level of the OS.
+.TP 
+\*(T<platform\*(T>
+The hardware platform (architecture) the OS runs on.
+.TP 
+\*(T<hostname\*(T>
+The name of the machine.
+.TP 
+\*(T<uptime\*(T>
+The uptime of the machine in seconds.
+.TP 
+\*(T<systime\*(T>
+The timestamp when the above stats where collected in seconds
+since epoch
+.SH "SEE ALSO"
+\fBstatgrab\fR(3)
+.SH WEBSITE
+\(lahttps://libstatgrab.org/\(ra

@@ -1,0 +1,155 @@
+'\" t -*- coding: us-ascii -*-
+.if \n(.g .ds T< \\FC
+.if \n(.g .ds T> \\F[\n[.fam]]
+.de URL
+\\$2 \(la\\$1\(ra\\$3
+..
+.if \n(.g .mso www.tmac
+.TH sg_get_page_stats 3 2019-03-08 libstatgrab ""
+.SH NAME
+sg_get_page_stats, sg_get_page_stats_r, sg_get_page_stats_diff, sg_get_page_stats_diff_between, sg_free_page_stats \- get paging statistics
+.SH SYNOPSIS
+'nh
+.nf
+\*(T<#include <statgrab.h>\*(T>
+.fi
+.sp 1
+.PP
+.fi
+.ad l
+\*(T<sg_page_stats *\fBsg_get_page_stats\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(size_t *\fIentries\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_page_stats *\fBsg_get_page_stats_r\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(size_t *\fIentries\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_page_stats *\fBsg_get_page_stats_diff\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(size_t *\fIentries\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_page_stats *\fBsg_get_page_stats_diff_between\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(const sg_page_stats *\fIcur\fR, const sg_page_stats *\fIlast\fR, size_t *\fIentries\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_error \fBsg_free_page_stats\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(sg_page_stats *\fIdata\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+'hy
+.SH DESCRIPTION
+The page stats module deliver the number of pages swapped in and out,
+either since the machine has been booted (by the
+\*(T<\fBsg_get_page_stats\fR\*(T>() and
+\*(T<\fBsg_get_page_stats_r\fR\*(T>() functions) or the
+difference between two measured statistics (by the
+\*(T<\fBsg_get_page_stats_diff\fR\*(T>() and
+\*(T<\fBsg_get_page_stats_diff_between\fR\*(T>() functions).
+.PP
+The \*(T<\fBsg_get_page_stats_diff\fR\*(T>() function calculates
+the difference between the last call to the function
+\*(T<\fBsg_get_page_stats\fR\*(T>() in this thread (the
+statistics of the earlier call are saved and
+\*(T<\fBsg_get_page_stats\fR\*(T>() is called immediately after
+this).
+.PP
+\fBAPI Shortcut\fR
+.TS
+allbox ;
+l | l | l.
+T{
+function
+T}	T{
+returns
+T}	T{
+data owner
+T}
+.T&
+l | l | l.
+T{
+sg_get_page_stats
+T}	T{
+\*(T<sg_page_stats\*(T> *
+T}	T{
+libstatgrab (thread local)
+T}
+T{
+sg_get_page_stats_r
+T}	T{
+\*(T<sg_page_stats\*(T> *
+T}	T{
+caller
+T}
+T{
+sg_get_page_stats_diff
+T}	T{
+\*(T<sg_page_stats\*(T> *
+T}	T{
+libstatgrab (thread local)
+T}
+T{
+sg_get_page_stats_diff_between
+T}	T{
+\*(T<sg_page_stats\*(T> *
+T}	T{
+caller
+T}
+.TE
+.PP
+The \*(T<sg_page_stats\*(T> buffer received from
+\*(T<\fBsg_get_page_stats_r\fR\*(T>() and the
+\*(T<\fBsg_get_page_stats_diff_between\fR\*(T>() must be freed
+using \*(T<\fBsg_free_page_stats\fR\*(T>() when not
+needed any more. The caller is responsible for doing it.
+.SH "RETURN VALUES"
+.nf
+\*(T<
+typedef struct{
+        unsigned long long pages_pagein;
+        unsigned long long pages_pageout;
+        time_t systime;
+}sg_page_stats;
+    \*(T>
+.fi
+.TP 
+\*(T<pages_pagein\*(T> 
+The number of pages swapped into memory.
+.TP 
+\*(T<pages_pageout\*(T> 
+The number of pages swapped out of memory (to swap).
+.TP 
+\*(T<systime\*(T> 
+The timestamp when the above stats where collected in seconds
+since epoch or the time period over which \*(T<pages_pagein\*(T>
+and \*(T<pages_pageout\*(T> were transferred.
+.SH BUGS
+Solaris doesn't seem to report accurately. It reports the number
+of pages swapped into memory, not necessarily from swap. This
+feature isn't deemed entirely reliable.
+.SH "SEE ALSO"
+\fBstatgrab\fR(3)
+.SH WEBSITE
+\(lahttps://libstatgrab.org/\(ra

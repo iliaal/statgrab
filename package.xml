@@ -26,8 +26,8 @@ Requires libstatgrab >= 0.92 and PHP >= 8.0.
  </lead>
  <date>2026-04-27</date>
  <version>
-  <release>2.1.0</release>
-  <api>2.1.0</api>
+  <release>2.2.0</release>
+  <api>2.2.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -35,18 +35,19 @@ Requires libstatgrab >= 0.92 and PHP >= 8.0.
  </stability>
  <license uri="http://www.php.net/license">PHP License 3.01</license>
  <notes>
-Feature-additive, BC-preserving release. Surfaces libstatgrab 0.92
-capability that 2.0.0 didn't expose.
+Bundled-libstatgrab support and leak fixes.
 
-- New procedural functions: sg_valid_filesystems,
-  sg_set_valid_filesystems, sg_snapshot, sg_error_details.
-- New OO methods on Statgrab mirroring those.
-- sg_cpu_percent_usage / Statgrab::cpu now take an optional $source
-  argument (CPU_PERCENT_ENTIRE / LAST_DIFF / NEW_DIFF).
-- New systime field on memory/load/swap returns; new context_switches /
-  voluntary_context_switches / involuntary_context_switches / systime
-  on process_stats returns.
-- New class constants: CPU_PERCENT_*, HOST_STATE_*, FS_*, ERROR_*.
+- Vendored libstatgrab 0.92.1 with one local patch fixing an
+  off-by-one in sg_destroy_globals that leaked the user-stats vector
+  (~1.1 KB) at every process exit. Patch is LGPL 2.1+, lives under
+  vendor/libstatgrab/patches/, submitted upstream.
+- New --with-statgrab=bundled configure option statically links the
+  patched copy. System libstatgrab remains the default.
+- Fixed our own 144-byte-per-call leak in sg_cpu_percent_usage /
+  Statgrab::cpu: sg_get_cpu_percents_r returns owned memory and we
+  weren't freeing it via sg_free_stats_buf.
+- LICENSE.libstatgrab (LGPL 2.1) ships next to LICENSE (PHP-3.01);
+  the two licenses cohabit cleanly.
 
 See CHANGELOG.md for the full list.
  </notes>

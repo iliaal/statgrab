@@ -1,0 +1,386 @@
+'\" -*- coding: us-ascii -*-
+.if \n(.g .ds T< \\FC
+.if \n(.g .ds T> \\F[\n[.fam]]
+.de URL
+\\$2 \(la\\$1\(ra\\$3
+..
+.if \n(.g .mso www.tmac
+.TH sg_vector_create 3 2019-10-03 libstatgrab ""
+.SH NAME
+sg_vector_create, sg_vector_clear, sg_vector_resize, sg_vector_free, sg_vector_clone, sg_vector_clone_into, sg_vector_compute_diff, sg_prove_vector, sg_get_nelements, sg_free_stats_buf \- statgrab vector management
+.SH SYNOPSIS
+'nh
+.nf
+\*(T<#include "statgrab.h"
+#include "vector.h"\*(T>
+.fi
+.sp 1
+.PP
+.fi
+.ad l
+\*(T<struct sg_vector *\fBsg_vector_create\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(size_t \fIblock_size\fR, size_t \fIalloc_count\fR, size_t \fIinitial_used\fR, const sg_vector_init_info * const \fIinfo\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<void \fBsg_vector_clear\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(struct sg_vector *\fIvector\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<struct sg_vector *\fBsg_vector_resize\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(struct sg_vector *\fIvector\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<void \fBsg_vector_free\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(struct sg_vector *\fIvector\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<struct sg_vector *\fBsg_vector_clone\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(const struct sg_vector *\fIsrc\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_error \fBsg_vector_clone_into\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(struct sg_vector **\fIdest\fR, const struct sg_vector *\fIsrc\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_error \fBsg_vector_compute_diff\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(struct sg_vector **\fIdest\fR, const struct sg_vector *\fIcur_vector\fR, const struct sg_vector *\fIlast_vector\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_error \fBsg_prove_vector\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(const struct sg_vector *\fIvec\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<size_t \fBsg_get_nelements\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(const void *\fIdata\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_error \fBsg_free_stats_buf\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(void *\fIdata\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+'hy
+.SH DESCRIPTION
+\*(T<\fBsg_vector_create\fR\*(T>() allocates and initialises a
+new statgrab vector with \*(T<initial_used\*(T> elements
+ready for use. Space for \*(T<alloc_count\*(T> elements
+is initially allocated (to avoid too many calls to
+\*(T<\fBrealloc\fR\*(T>() during later
+\*(T<\fBsg_vector_resize\fR\*(T>() calls). The value of
+\*(T<block_size\*(T> must be a power of 2, it's rounded
+up to the next power of 2 when it's not. If
+\*(T<alloc_count\*(T> is not a multiple of
+\*(T<block_size\*(T>, it's rounded up to the next
+multiple of \*(T<block_size\*(T>. It returns a pointer
+to the newly created vector.
+.PP
+\*(T<\fBsg_vector_clear\fR\*(T>() destroys all elements
+contained in the given vector. In opposite to
+\*(T<\fBsg_vector_resize\fR\*(T>( x, 0 ) the allocated size of
+the vector remains untouched.
+.PP
+\*(T<\fBsg_vector_resize\fR\*(T>() increases or decreases the
+amount of allocated elements in the specified vector. The amount of
+allocated elements is always a multiple of the initialisation parameter
+\*(T<block_size\*(T>. In the special case,
+\*(T<\fBsg_vector_resize\fR\*(T>() is called with 0 in
+argument \*(T<new_count\*(T>, the vector is freed after
+all vector elements had been destroyed. It returns the pointer to the
+resized vector.
+.PP
+\*(T<\fBsg_vector_free\fR\*(T>() destroys all vector elements
+and deallocates the storage belonging to the given vector.
+.PP
+\*(T<\fBsg_vector_clone\fR\*(T>() clones all elements of the
+given vector into a new vector created with the same specification
+as the referenced one. It returns a pointer to the cloned vector.
+.PP
+\*(T<\fBsg_vector_clone_into\fR\*(T>() clones all elements of
+the given source vector into the given target vector. The target
+vector must be created for the same element data type as the source
+vector. It returns an error code != to SG_ERROR_NONE if
+something went wrong.
+.PP
+\*(T<\fBsg_vector_compute_diff\fR\*(T>() computes a difference
+vector between the vector containing current statistics and another
+vector containing older statistics. If an element exists in the
+current vector but not in the opposite one, it's cloned into the
+result vector. If an element exists only in the opposite vector,
+it doesn't appear in the target vector.
+\*(T<\fBsg_vector_compute_diff\fR\*(T>() returns an error
+code != to SG_ERROR_NONE if something went wrong.
+.PP
+\*(T<\fBsg_prove_vector\fR\*(T>() proves whether a pointer to a
+vector really points to a vector. In case the given vector pointer
+points to corrupted data, the program is aborted. When
+\*(T<\fBsg_prove_vector\fR\*(T>() returns, it returns
+SG_ERROR_NONE.
+.PP
+\*(T<\fBsg_get_nelements\fR\*(T>() returns the number of
+elements the given data area, encompasses by a statgrab vector,
+contains. The vector head is internally calculated from the
+given pointer to the first vector element.
+.PP
+\*(T<\fBsg_free_stats_buf\fR\*(T>() frees the vector
+emcompassing the given data area.
+.SH NOTES
+Except \*(T<\fBsg_get_nelements\fR\*(T>() and
+\*(T<\fBsg_free_stats_buf\fR\*(T>() none of above functions can
+be called from outside of the libstatgrab sources. The documented
+structures and APIs may change without warning. The description of
+all other API is intended to be read from libstatgrab developers
+only.
+.PP
+Each vector is created from two elements: the vector information
+and the list of elements:
+
+.nf
+\*(T<
+template <class T, class Impl>
+struct sg_vector {
+        size_t used_count;
+        size_t alloc_count;
+        size_t block_shift;
+        Impl vector_implementation;
+        T elements[alloc_count];
+};
+      \*(T>
+.fi
+
+Of course, it is not valid C, so being tricky was the solution:
+
+.nf
+\*(T<
+typedef struct sg_vector {
+	size_t used_count;
+	size_t alloc_count;
+	size_t block_shift;
+	struct sg_vector_init_info info;
+} sg_vector;
+
+struct sg_vector_size_helper {
+	struct sg_vector v;
+	long long ll;
+};
+
+#define VECTOR_SIZE offsetof(struct sg_vector_size_helper,ll)
+
+/* Return the data ptr of a vector */
+#define VECTOR_DATA(vector) \e
+	(vector ? (void *)(((char *)vector)+VECTOR_SIZE) : NULL)
+
+#define VECTOR_ADDR_ARITH(ptr) \e
+	(sg_vector *)(((char *)(ptr))\-VECTOR_SIZE)
+/* Return the vector for a data */
+#define VECTOR_ADDRESS(ptr) \e
+	((ptr) ? (SG_ERROR_NONE == sg_prove_vector(VECTOR_ADDR_ARITH(ptr)) ? VECTOR_ADDR_ARITH(ptr) : NULL ) : NULL)
+      \*(T>
+.fi
+.PP
+This also allows user functions as
+\*(T<\fBsg_get_nelements\fR\*(T>() and
+\*(T<\fBsg_free_stats_buf\fR\*(T>() to switch easily between
+the vector structure and the content.
+.SS "THE VECTOR SPECIALISATION STRUCTURE"
+As mentioned, the vector implementation uses strategies from the
+object oriented programming concept named "polymorphism".
+A vector is described by a small object containing inherent
+attributes like element size and a bunch of "virtual
+methods" to do element related tasks like initialising or
+destroying elements.
+.PP
+.nf
+\*(T<
+typedef void (*vector_init_function)(void *item);
+typedef sg_error (*vector_copy_function)(const void *src, void *dst);
+typedef sg_error (*vector_compute_diff_function)(void *dst, const void *src);
+typedef int (*vector_compare_function)(const void *a, const void *b);
+typedef void (*vector_destroy_function)(void *item);
+
+struct sg_vector_init_info {
+        size_t item_size;
+        vector_init_function init_fn;
+        vector_copy_function copy_fn;
+        vector_compute_diff_function compute_diff_fn;
+        vector_compare_function compare_fn;
+        vector_destroy_function destroy_fn;
+};
+      \*(T>
+.fi
+.PP
+The instances of struct \*(T<sg_vector_init_info\*(T>
+are conceptional statically initialised by using either the
+preprocessor macro
+\*(T<\fBVECTOR_INIT_INFO_FULL_INIT\fR\*(T>(\*(T<type\*(T>)
+or
+\*(T<\fBVECTOR_INIT_INFO_EMPTY_INIT\fR\*(T>(\*(T<type\*(T>).
+Here're some examples to demonstrate how it's meant:
+
+\fBInitialising CPU statistics vector description\fR
+.PP
+.nf
+\*(T<
+VECTOR_INIT_INFO_EMPTY_INIT(sg_cpu_stats);
+          \*(T>
+.fi
+.PP
+\fBInitialising Host-Info statistics vector description\fR
+.PP
+.nf
+\*(T<
+static void sg_os_stats_item_init(sg_os_stats *d);
+static void sg_os_stats_item_destroy(sg_os_stats *d);
+
+#define sg_os_stats_item_copy NULL
+#define sg_os_stats_item_compute_diff NULL
+#define sg_os_stats_item_compare NULL
+
+VECTOR_INIT_INFO_FULL_INIT(sg_os_stats);
+          \*(T>
+.fi
+.PP
+\fBInitialising Disk-IO statistics vector description\fR
+.PP
+.nf
+\*(T<
+static void sg_disk_io_stats_item_init(sg_disk_io_stats *d);
+static sg_error sg_disk_io_stats_item_copy(sg_disk_io_stats *d, const sg_disk_io_stats *s);
+static sg_error sg_disk_io_stats_item_compute_diff(const sg_disk_io_stats *s, sg_disk_io_stats *d);
+static int sg_disk_io_stats_item_compare(const sg_disk_io_stats *a, const sg_disk_io_stats *b);
+static void sg_disk_io_stats_item_destroy(sg_disk_io_stats *d);
+
+VECTOR_INIT_INFO_FULL_INIT(sg_disk_io_stats);
+          \*(T>
+.fi
+.SS "WORKING WITH VECTORS"
+To simplify the working with the vector management functions, some
+preprocessor macros are available. They are shown here as if they
+were functions to ease understanding.
+.PP
+'nh
+.fi
+.ad l
+\*(T<struct sg_vector *\fBVECTOR_CREATE\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(identifier \fItype\fR, size_t \fIblock_size\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<void \fBVECTOR_CLEAR\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(struct sg_vector *\fIvector\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<struct sg_vector *\fBVECTOR_CREATE_OR_RESIZE\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(struct sg_vector *\fIvector\fR, size_t \fInew_count\fR, identifier \fItype\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<void \fBVECTOR_UPDATE\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(struct sg_vector **\fIvectorptr\fR, size_t \fInew_count\fR, datatype *\fIdata\fR, identifier \fIdatatype\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<void \fBVECTOR_ITEM_COUNT\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(struct sg_vector *\fIvector\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+'hy
+.PP
+\*(T<\fBVECTOR_CREATE\fR\*(T>() calls
+\*(T<\fBsg_vector_create\fR\*(T>() with
+\*(T<alloc_count = block_size\*(T> and \*(T<initial_used = 0\*(T>
+using the vector specialisation \*(T<type##_vector_init_info\*(T>.
+.PP
+\*(T<\fBVECTOR_CLEAR\fR\*(T>() simply calls
+\*(T<\fBsg_vector_clear\fR\*(T>(). This macro exists only for
+conformity.
+.PP
+\*(T<\fBVECTOR_CREATE_OR_RESIZE\fR\*(T>() calls
+\*(T<\fBsg_vector_create\fR\*(T>() when the given vector pointer
+points to \*(T<NULL\*(T> or \*(T<\fBsg_vector_resize\fR\*(T>()
+otherwise. The result of the appropriate function is returned.
+.PP
+\*(T<\fBVECTOR_UPDATE\fR\*(T>() calls
+\*(T<\fBVECTOR_CREATE_OR_RESIZE\fR\*(T>() and sets data to the
+first element of the resulting vector when a non-NULL pointer got, to
+NULL otherwise.
+When \*(T<\fBVECTOR_CREATE_OR_RESIZE\fR\*(T>() returns a NULL
+pointer and \*(T<new_count\*(T> is not equal to 0 (zero),
+the instructions from the macro \*(T<\fBVECTOR_UPDATE_ERROR_CLEANUP\fR\*(T>
+are executed to cleanup before returning from current subroutine with
+the error which has been occurred.
+.PP
+\*(T<\fBVECTOR_ITEM_COUNT\fR\*(T>() returns 0 for a non-existing
+vector (\*(T<vector\*(T> == 0) and the number of
+containing elements otherwise.
+.SH "RETURN VALUES"
+Beside error codes, the return values, if any, are always a pointer to
+vector structures (struct \*(T<sg_vector\*(T> *).
+.SH "SEE ALSO"
+\fBstatgrab\fR(3)
+.SH WEBSITE
+\(lahttps://libstatgrab.org/\(ra

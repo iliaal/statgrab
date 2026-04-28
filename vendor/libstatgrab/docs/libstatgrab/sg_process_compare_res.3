@@ -1,0 +1,449 @@
+'\" t -*- coding: us-ascii -*-
+.if \n(.g .ds T< \\FC
+.if \n(.g .ds T> \\F[\n[.fam]]
+.de URL
+\\$2 \(la\\$1\(ra\\$3
+..
+.if \n(.g .mso www.tmac
+.TH sg_get_process_stats 3 2019-03-08 libstatgrab ""
+.SH NAME
+sg_get_process_stats, sg_get_process_stats_r, sg_get_process_count, sg_get_process_count_of, sg_get_process_count_r, sg_free_process_count, sg_process_compare_name, sg_process_compare_pid, sg_process_compare_uid, sg_process_compare_gid, sg_process_compare_size, sg_process_compare_res, sg_process_compare_cpu, sg_process_compare_time \- get process statistics
+.SH SYNOPSIS
+'nh
+.nf
+\*(T<#include <statgrab.h>\*(T>
+.fi
+.sp 1
+.PP
+.fi
+.ad l
+\*(T<sg_process_stats *\fBsg_get_process_stats\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(size_t *\fIentries\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_process_stats *\fBsg_get_process_stats_r\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(size_t *\fIentries\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_error \fBsg_free_process_stats\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(sg_process_stats *\fIdata\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_process_count *\fBsg_get_process_count\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(void);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_process_count *\fBsg_get_process_count_of\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(sg_process_count_source \fIpcs\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_process_count *\fBsg_get_process_count_r\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(sg_process_stats const *\fIwhereof\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_error \fBsg_free_process_count\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(sg_process_count *\fIdata\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<int \fBsg_process_compare_name\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(const void *\fIva\fR, const void *\fIvb\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<int \fBsg_process_compare_pid\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(const void *\fIva\fR, const void *\fIvb\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<int \fBsg_process_compare_uid\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(const void *\fIva\fR, const void *\fIvb\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<int \fBsg_process_compare_gid\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(const void *\fIva\fR, const void *\fIvb\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<int \fBsg_process_compare_size\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(const void *\fIva\fR, const void *\fIvb\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<int \fBsg_process_compare_res\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(const void *\fIva\fR, const void *\fIvb\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<int \fBsg_process_compare_cpu\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(const void *\fIva\fR, const void *\fIvb\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<int \fBsg_process_compare_time\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(const void *\fIva\fR, const void *\fIvb\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+'hy
+.SH DESCRIPTION
+The \*(T<\fBsg_get_process_stats\fR\*(T> functions provide
+statistics about the currently running processes. Both functions,
+\*(T<\fBsg_get_process_stats\fR\*(T>() and
+\*(T<\fBsg_get_process_stats_r\fR\*(T>(), take an optional
+\*(T<entries\*(T> parameter, which points
+(when given) to a size_t to take the number of returned vector
+entries.
+.PP
+The functions \*(T<\fBsg_get_process_count_of\fR\*(T>() and
+\*(T<\fBsg_get_process_count_r\fR\*(T>() provide an aggregated
+view of the process table - they deliver the amount of processes
+per process state. The \*(T<\fBsg_get_process_count\fR\*(T>()
+is in fact a preprocessor macro for backward compatibility and calls
+\*(T<\fBsg_get_process_count_of\fR\*(T>() with the parameter
+\*(T<pcs\*(T> of sg_entire_process_count to emulate
+the behavior until 0.17.
+.PP
+\fBAPI Shortcut\fR
+.TS
+allbox ;
+l | l | l.
+T{
+function
+T}	T{
+returns
+T}	T{
+data owner
+T}
+.T&
+l | l | l.
+T{
+sg_get_process_stats
+T}	T{
+\*(T<sg_process_stats\*(T> *
+T}	T{
+libstatgrab (thread local)
+T}
+T{
+sg_get_process_stats_r
+T}	T{
+\*(T<sg_process_stats\*(T> *
+T}	T{
+caller
+T}
+T{
+sg_get_process_count_of
+T}	T{
+\*(T<sg_process_count\*(T> *
+T}	T{
+libstatgrab (thread local)
+T}
+T{
+sg_get_process_count_r
+T}	T{
+\*(T<sg_process_count\*(T> *
+T}	T{
+caller
+T}
+.TE
+.PP
+The \*(T<sg_process_stats\*(T> vectors received from
+\*(T<\fBsg_get_process_stats_r\fR\*(T>() or the
+\*(T<sg_process_count\*(T> summaries received from
+\*(T<\fBsg_get_process_count_r\fR\*(T> must be
+freed using \*(T<\fBsg_free_process_stats\fR\*(T>() or
+\*(T<\fBsg_free_process_count\fR\*(T>(), respectively.
+The caller is responsible for doing it when the data isn't needed
+any more.
+.PP
+\*(T<\fBsg_process_compare_name\fR\*(T>
+.br
+\*(T<\fBsg_process_compare_pid\fR\*(T>
+.br
+\*(T<\fBsg_process_compare_uid\fR\*(T>
+.br
+\*(T<\fBsg_process_compare_gid\fR\*(T>
+.br
+\*(T<\fBsg_process_compare_size\fR\*(T>
+.br
+\*(T<\fBsg_process_compare_res\fR\*(T>
+.br
+\*(T<\fBsg_process_compare_cpu\fR\*(T>
+.br
+\*(T<\fBsg_process_compare_time\fR\*(T>
+.PP
+These functions compare two sg_process_stats entries, and return an
+int to represent which one is greater. The main use of these functions
+is to be passed to qsort to sort the sg_process_stats by the given type.
+
+\fBExample\fR
+.PP
+.nf
+\*(T<
+size_t entries;
+sg_process_stats *proc_stats = NULL;
+while( NULL != ( proc_stats = sg_get_process_stats_r(&entries) ) ) {
+    /* order entries by comparing the process identifier */
+    qsort( proc_stats, entries, sizeof(proc_stats[0]), &sg_process_compare_pid );
+    show_proc_stats( proc_stats );
+    sg_free_process_stats( proc_stats );
+}
+        \*(T>
+.fi
+.SH "RETURN VALUES"
+The structure returned by sg_get_process_stats is of type
+\*(T<sg_process_stats\*(T>.
+.PP
+.nf
+\*(T<
+typedef struct {
+        char *process_name;
+        char *proctitle;
+
+        pid_t pid;    /* process identifier */
+        pid_t parent; /* Parent pid */
+        pid_t pgid;   /* process id of process group leader */
+        pid_t sessid; /* session id of the session the process belongs to */
+
+        uid_t uid;
+        uid_t euid;
+        gid_t gid;
+        gid_t egid;
+
+        unsigned long long context_switches;
+        unsigned long long voluntary_context_switches;
+        unsigned long long involuntary_context_switches;
+        unsigned long long proc_size; /* in bytes */
+        unsigned long long proc_resident; /* in bytes */
+        time_t start_time; /* When was the process started */
+        time_t time_spent; /* time running in seconds */
+        double cpu_percent;
+        int nice;
+        sg_process_state state;
+
+        time_t systime;
+} sg_process_stats;
+    \*(T>
+.fi
+.PP
+.nf
+\*(T<
+typedef enum {
+        SG_PROCESS_STATE_RUNNING,
+        SG_PROCESS_STATE_SLEEPING,
+        SG_PROCESS_STATE_STOPPED,
+        SG_PROCESS_STATE_ZOMBIE,
+        SG_PROCESS_STATE_UNKNOWN
+} sg_process_state;
+    \*(T>
+.fi
+.TP 
+\*(T<process_name\*(T>
+The name of the command that was run. The content of this
+field heavily depends on the underlying operating system,
+some store the basename the executable passes to
+the \*(T<\fBexec\fR\*(T>(2) system call, some the entire
+path. Most OS restrict the size of this field - some like
+the *BSD family to a very low value of 15 bytes.
+
+This field is usually immutable for userland processes.
+.TP 
+\*(T<proctitle\*(T>
+The command line (the "title") of the process. Take
+note - this can be modified by the process, so isn't
+guaranteed to be the original command line.
+.TP 
+\*(T<pid\*(T>
+The process ID.
+.TP 
+\*(T<parent\*(T>
+The parent process ID.
+.TP 
+\*(T<pgid\*(T>
+The process ID of the process group leader.
+.TP 
+\*(T<sessid\*(T>
+Session id of the session the process belongs to.
+.TP 
+\*(T<uid\*(T>
+The ID of the user the process is running as.
+.TP 
+\*(T<euid\*(T>
+The ID of the effective user the process is running as.
+.TP 
+\*(T<gid\*(T>
+The ID of the group the process is running as.
+.TP 
+\*(T<egid\*(T>
+The ID of the effective group the process is running as.
+.TP 
+\*(T<context_switches\*(T>
+The number of context switches of this process (voluntary and involuntary).
+.TP 
+\*(T<voluntary_context_switches\*(T>
+The number of voluntary context switches of this process (eg.
+by calling \*(T<\fBsched_yield\fR\*(T>() or \*(T<\fBsleep\fR\*(T>()).
+.TP 
+\*(T<involuntary_context_switches\*(T>
+The number of involuntary context switches of this process (eg.
+time slice exhausted or signal sent).
+.TP 
+\*(T<proc_size\*(T>
+The virtual memory size of the process in bytes.
+.TP 
+\*(T<proc_resident\*(T>
+The size of the process that's resident in memory.
+.TP 
+\*(T<start_time\*(T>
+The time when the process has been started in seconds since
+epoch.
+.TP 
+\*(T<time_spent\*(T>
+The number of seconds the process has been running (user+system
+time, without time spent by child processes).
+.TP 
+\*(T<cpu_percent\*(T>
+The current percentage of CPU the process is using.
+.TP 
+\*(T<nice\*(T>
+The nice value of the process.
+.TP 
+\*(T<state\*(T>
+The current state of the process. See sg_process_state
+for permitted values.
+.TP 
+\*(T<systime\*(T>
+The time in seconds since epoch of the moment where the present
+statistic has been created. This might be (but doesn't have to
+be) the same moment for all returned entries, regardless whether
+they're fetched with one snapshot or puzzled from some kind of
+procfs.
+.PP
+The structure returned by sg_get_process_count_of and
+sg_get_process_count_r is of type
+\*(T<sg_process_count\*(T>.
+.PP
+.nf
+\*(T<
+typedef enum sg_process_count_source {
+        sg_entire_process_count,
+        sg_last_process_count
+} sg_process_count_source;
+    \*(T>
+.fi
+.PP
+.nf
+\*(T<
+typedef struct{
+        unsigned long long total;
+        unsigned long long running;
+        unsigned long long sleeping;
+        unsigned long long stopped;
+        unsigned long long zombie;
+        unsigned long long unknown;
+
+        time_t systime;
+}sg_process_count;
+    \*(T>
+.fi
+.TP 
+\*(T<total\*(T>
+The total number of processes.
+.TP 
+\*(T<running\*(T>
+The number of running processes.
+.TP 
+\*(T<sleeping\*(T>
+The number of sleeping processes.
+.TP 
+\*(T<stopped\*(T>
+The number of stopped processes.
+.TP 
+\*(T<zombie\*(T>
+The number of zombie processes.
+.TP 
+\*(T<unknown\*(T>
+The number of processes not matching any of above named categories.
+.TP 
+\*(T<systime\*(T>
+The time in seconds since epoch of the moment where the present
+statistic has been created.
+.SH BUGS
+The very first call of
+\*(T<\fBsg_get_process_count_of\fR\*(T>(sg_last_process_count)
+will return the same as
+\*(T<\fBsg_get_process_count_of\fR\*(T>(sg_entire_process_count).
+.PP
+The compare functions exist rather for backward compatibility than
+for functionality enhancements. Limited flexibility (e.g. reverse
+order) and lack of optimising opportunities for the compiler leads
+to the recommendation to implement the required compare routines
+locally.
+.SH "SEE ALSO"
+\fBstatgrab\fR(3)
+.SH WEBSITE
+\(lahttps://libstatgrab.org/\(ra

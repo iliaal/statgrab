@@ -14,7 +14,7 @@ var_dump(SG_PROCESS_STATE_RUNNING === Statgrab::STATE_RUNNING);
 ?>
 --EXPECT--
 bool(true)
-string(5) "2.1.0"
+string(5) "2.2.0"
 bool(true)
 bool(true)
 bool(true)

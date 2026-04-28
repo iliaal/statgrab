@@ -1,0 +1,204 @@
+'\" t -*- coding: us-ascii -*-
+.if \n(.g .ds T< \\FC
+.if \n(.g .ds T> \\F[\n[.fam]]
+.de URL
+\\$2 \(la\\$1\(ra\\$3
+..
+.if \n(.g .mso www.tmac
+.TH sg_get_mem_stats 3 2019-03-08 libstatgrab ""
+.SH NAME
+sg_get_mem_stats, sg_get_mem_stats_r, sg_free_mem_stats, sg_get_swap_stats, sg_get_swap_stats_r, sg_free_swap_stats \- get VM statistics
+.SH SYNOPSIS
+'nh
+.nf
+\*(T<#include <statgrab.h>\*(T>
+.fi
+.sp 1
+.PP
+.fi
+.ad l
+\*(T<sg_mem_stats *\fBsg_get_mem_stats\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(size_t *\fIentries\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_mem_stats *\fBsg_get_mem_stats_r\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(size_t *\fIentries\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_error \fBsg_free_mem_stats\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(sg_mem_stats *\fIdata\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_swap_stats *\fBsg_get_swap_stats\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(size_t *\fIentries\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_swap_stats *\fBsg_get_swap_stats_r\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(size_t *\fIentries\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_error \fBsg_free_swap_stats\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(sg_swap_stats *\fIdata\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+'hy
+.SH DESCRIPTION
+Memory statistics are accessed through the
+\*(T<\fBsg_get_mem_stats\fR\*(T>() function and the
+\*(T<\fBsg_get_mem_stats_r\fR\*(T>() function. Both return a
+pointer to a \*(T<sg_mem_stats\*(T> buffer.
+Note that this statistic doesn't need to map the entire physical
+memory usage, it represents the real memory usable by the operating
+system.
+.PP
+Memory statistics are accessed through the
+\*(T<\fBsg_get_swap_stats\fR\*(T>() function and the
+\*(T<\fBsg_get_swap_stats_r\fR\*(T>() function. Both return a
+pointer to a \*(T<sg_swap_stats\*(T> buffer.
+.PP
+\fBAPI Shortcut\fR
+.TS
+allbox ;
+l | l | l.
+T{
+function
+T}	T{
+returns
+T}	T{
+data owner
+T}
+.T&
+l | l | l.
+T{
+sg_get_mem_stats
+T}	T{
+\*(T<sg_mem_stats\*(T> *
+T}	T{
+libstatgrab (thread local)
+T}
+T{
+sg_get_mem_stats_r
+T}	T{
+\*(T<sg_mem_stats\*(T> *
+T}	T{
+caller
+T}
+T{
+sg_get_swap_stats
+T}	T{
+\*(T<sg_swap_stats\*(T> *
+T}	T{
+libstatgrab (thread local)
+T}
+T{
+sg_get_swap_stats_r
+T}	T{
+\*(T<sg_swap_stats\*(T> *
+T}	T{
+caller
+T}
+.TE
+.PP
+The \*(T<sg_mem_stats\*(T> buffer received from
+\*(T<\fBsg_get_mem_stats_r\fR\*(T>() and the
+\*(T<sg_swap_stats\*(T> buffer received from
+\*(T<\fBsg_get_swap_stats_r\fR\*(T>() must be freed using
+\*(T<\fBsg_free_mem_stats\fR\*(T>() or the
+\*(T<\fBsg_free_swap_stats\fR\*(T>(), respectively, when not
+needed any more. The caller is responsible for doing it.
+.PP
+On the FreeBSD operating system elevated privileges are required
+to access the swap statistics. Making the program setgid kmem
+should be sufficient. Programs running as root will not have this
+problem.
+.SH "RETURN VALUES"
+The VM system calls can return a pointer to either a
+\*(T<sg_mem_stats\*(T> or a
+\*(T<sg_swap_stats\*(T>.
+.PP
+.nf
+\*(T<
+typedef struct{
+        unsigned long long total;
+        unsigned long long free;
+        unsigned long long used;
+        unsigned long long cache;
+        time_t systime;
+} sg_mem_stats;
+    \*(T>
+.fi
+.TP 
+\*(T<total\*(T> 
+The total amount of real memory in bytes.
+.TP 
+\*(T<free\*(T> 
+The free amount of real memory in bytes.
+.TP 
+\*(T<used\*(T> 
+The used amount of real memory in bytes.
+.TP 
+\*(T<cache\*(T> 
+The amount of real memory in bytes used for caching.
+.TP 
+\*(T<systime\*(T>
+the timestamp when the above stats where collected in seconds
+since epoch
+.PP
+.nf
+\*(T<
+typedef struct {
+        unsigned long long total;
+        unsigned long long used;
+        unsigned long long free;
+        time_t systime;
+} sg_swap_stats;
+    \*(T>
+.fi
+.TP 
+\*(T<total\*(T> 
+The total swap space in bytes.
+.TP 
+\*(T<used\*(T> 
+The used swap in bytes.
+.TP 
+\*(T<free\*(T> 
+The free swap in bytes.
+.TP 
+\*(T<systime\*(T>
+The timestamp when the above stats where collected in seconds
+since epoch
+.SH TODO
+Add a function to hold open the file descriptor to the kernel
+memory structures. Doing this would allow the elevated privileges
+to be dropped early on.
+.SH "SEE ALSO"
+\fBstatgrab\fR(3)
+.SH WEBSITE
+\(lahttps://libstatgrab.org/\(ra

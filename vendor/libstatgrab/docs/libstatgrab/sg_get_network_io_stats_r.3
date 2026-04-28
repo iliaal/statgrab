@@ -1,0 +1,231 @@
+'\" t -*- coding: us-ascii -*-
+.if \n(.g .ds T< \\FC
+.if \n(.g .ds T> \\F[\n[.fam]]
+.de URL
+\\$2 \(la\\$1\(ra\\$3
+..
+.if \n(.g .mso www.tmac
+.TH sg_get_network_io_stats 3 2019-03-08 libstatgrab ""
+.SH NAME
+sg_get_network_io_stats, sg_get_network_io_stats_r, sg_get_network_io_stats_diff, sg_get_network_io_stats_diff_between, sg_free_network_io_stats, sg_network_io_compare_name \- get network statistics
+.SH SYNOPSIS
+'nh
+.nf
+\*(T<#include <statgrab.h>\*(T>
+.fi
+.sp 1
+.PP
+.fi
+.ad l
+\*(T<sg_network_io_stats *\fBsg_get_network_io_stats\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(size_t *\fIentries\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_network_io_stats *\fBsg_get_network_io_stats_r\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(size_t *\fIentries\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_network_io_stats *\fBsg_get_network_io_stats_diff\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(size_t *\fIentries\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_network_io_stats *\fBsg_get_network_io_stats_diff_between\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(const sg_network_io_stats *\fIcur\fR, const sg_network_io_stats *\fIlast\fR, size_t *\fIentries\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_error \fBsg_free_network_io_stats\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(sg_network_iface_stats *\fIdata\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<int \fBsg_network_io_compare_name\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(const void *\fIva\fR, const void *\fIvb\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+'hy
+.SH DESCRIPTION
+The \*(T<\fBsg_get_network_io_stats\fR\*(T> functions provide
+network interface I/O statistics on a per interface basis. All get-
+and diff-functions take an optional \*(T<entries\*(T>
+parameter, which points (when given) to a size_t to take the number
+of returned vector entries.
+.PP
+The \*(T<\fBsg_get_network_io_stats\fR\*(T>() and
+\*(T<\fBsg_get_network_io_stats_r\fR\*(T>() functions deliver the
+I/O-statistics since the interface has been attached to the system.
+The \*(T<\fBsg_get_network_io_stats_diff\fR\*(T>() and
+\*(T<\fBsg_get_network_io_stats_diff_between\fR\*(T>() deliver the
+difference between two calls of
+\*(T<\fBsg_get_network_io_stats\fR\*(T>() or
+\*(T<\fBsg_get_network_io_stats_r\fR\*(T>(), respectively.
+.PP
+\fBAPI Shortcut\fR
+.TS
+allbox ;
+l | l | l.
+T{
+function
+T}	T{
+returns
+T}	T{
+data owner
+T}
+.T&
+l | l | l.
+T{
+sg_get_network_io_stats
+T}	T{
+sg_network_io_stats *
+T}	T{
+libstatgrab (thread local)
+T}
+T{
+sg_get_network_io_stats_r
+T}	T{
+sg_network_io_stats *
+T}	T{
+caller
+T}
+T{
+sg_get_network_io_stats_diff
+T}	T{
+sg_network_io_stats *
+T}	T{
+libstatgrab (thread local)
+T}
+T{
+sg_get_network_io_stats_diff_between
+T}	T{
+sg_network_io_stats *
+T}	T{
+caller
+T}
+.TE
+.PP
+\*(T<sg_network_io_stats\*(T> vectors received from
+\*(T<\fBsg_get_network_io_stats_r\fR\*(T>() or
+\*(T<\fBsg_get_network_io_stats_diff_between\fR\*(T>() must be
+freed using \*(T<\fBsg_free_network_io_stats\fR\*(T>() when
+not needed any more. The caller is responsible for doing it.
+.PP
+Additionally a support function for \*(T<\fBqsort\fR\*(T>(3)
+are available: \*(T<\fBsg_network_io_compare_name\fR\*(T>().
+
+\fBExample\fR
+.PP
+.nf
+\*(T<
+size_t entries;
+sg_network_io_stats *network_stats = NULL;
+while( NULL != ( network_stats = sg_get_network_io_stats_diff(&entries) ) ) {
+    /* sort interface by name */
+    qsort( network_stats, entries, sizeof(network_stats[0]), &sg_network_io_compare_name );
+    show_network_io_stats( network_stats );
+}
+        \*(T>
+.fi
+.PP
+\*(T<\fBsg_get_network_io_stats\fR\*(T> returns the network
+traffic stored in the kernel which holds the amount of data
+transferred since device was attached. On some platforms, such as
+Solaris 7, this value is stored in a 32bit int, so wraps around when it
+reaches 4GB. Other platforms, such as Solaris 8, hold the value
+in a 64bit int, which wraps somewhere near 17 million terabytes.
+The \*(T<\fBsg_get_network_io_stats_diff\fR\*(T>() function and
+the \*(T<\fBsg_get_network_io_stats_diff_between\fR\*(T>()
+function care about these overflows and try to detect overflows
+when the diff is calculated.
+.SH "RETURN VALUES"
+All network statistics return a pointer to a structure of type
+\*(T<sg_network_io_stats\*(T>.
+.PP
+.nf
+\*(T<
+typedef struct {
+        char *interface_name;
+        unsigned long long tx;
+        unsigned long long rx;
+        unsigned long long ipackets;
+        unsigned long long opackets;
+        unsigned long long ierrors;
+        unsigned long long oerrors;
+        unsigned long long collisions;
+        time_t systime;
+} sg_network_io_stats;
+    \*(T>
+.fi
+.TP 
+\*(T<interface_name\*(T> 
+The name known to the operating system.
+(eg. on linux it might be eth0, on AIX en0 and on FreeBSD fxp0)
+.TP 
+\*(T<tx\*(T> 
+The number of bytes transmitted.
+.TP 
+\*(T<rx\*(T> 
+The number of bytes received.
+.TP 
+\*(T<ipackets\*(T> 
+The number of packets received.
+.TP 
+\*(T<opackets\*(T> 
+The number of packets transmitted.
+.TP 
+\*(T<ierrors\*(T> 
+The number of receive errors.
+.TP 
+\*(T<oerrors\*(T> 
+The number of transmit errors.
+.TP 
+\*(T<collisions\*(T> 
+The number of collisions.
+.TP 
+\*(T<systime\*(T> 
+The timestamp when the above stats where collected in seconds
+since epoch or the time period over which \*(T<tx\*(T>
+and \*(T<rx\*(T> were transferred.
+.SH BUGS
+\*(T<\fBsg_get_network_io_stats_diff\fR\*(T> and
+\*(T<\fBsg_get_network_io_stats_diff_between\fR\*(T> compare two
+lists of network interface related I/O statistics. Each entry occurring
+only in the second list is passed through to the resulting list as if
+it would have been compared to an entry with all statistic values
+set to 0. This implies, on the very first call
+\*(T<\fBsg_get_network_io_stats_diff\fR\*(T> will return the same
+as \*(T<\fBsg_get_network_io_stats\fR\*(T>.
+.PP
+On operating systems that hold only 32bits of data there is a
+problem if the values wrap twice. For example, on Solaris 7 if
+9GB is transferred and the operating system wraps at 4GB, the
+\*(T<\fBsg_get_network_io_stats_diff\fR\*(T> function will return
+5GB.
+.SH "SEE ALSO"
+\fBstatgrab\fR(3)
+.SH WEBSITE
+\(lahttps://libstatgrab.org/\(ra

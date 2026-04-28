@@ -1,0 +1,130 @@
+'\" -*- coding: us-ascii -*-
+.if \n(.g .ds T< \\FC
+.if \n(.g .ds T> \\F[\n[.fam]]
+.de URL
+\\$2 \(la\\$1\(ra\\$3
+..
+.if \n(.g .mso www.tmac
+.TH sg_intro 3 2019-03-08 libstatgrab ""
+.SH NAME
+sg_intro \- get system statistics
+.SH SYNOPSIS
+'nh
+.nf
+\*(T<#include <statgrab.h>\*(T>
+.fi
+.sp 1
+'hy
+.SH DESCRIPTION
+The statgrab library provides a cross-platform interface to getting
+system statistics. Each of the function calls to grab some statistics
+returns an array of structures. Functions which return always a fixed
+number of array entries (typical one) won't take an additional
+parameter to store the number of array entries, others will. Anyway,
+if the information isn't available anymore, you can call
+\*(T<\fBsg_get_nelements\fR\*(T>(). See the manual page for each
+individual function for more details on usage.
+.PP
+For each statistic type there are two functions available to fetch the
+data: \*(T<\fBsg_get_STATTYPE\fR\*(T> (e.g.
+\*(T<\fBsg_get_cpu_stats\fR\*(T>) and
+\*(T<\fBsg_get_STATTYPE_r\fR\*(T> (e.g.
+\*(T<\fBsg_get_cpu_stats_r\fR\*(T>). The difference between both
+interfaces is the ownership of the returned statistic structures: while
+the (well known) \*(T<\fBsg_get_cpu_stats\fR\*(T> returns a
+pointer to a memory area owned and controlled by the statgrab library,
+\*(T<\fBsg_get_cpu_stats_r\fR\*(T> will return a pointer to a
+memory area owned and controlled by the caller.
+Storage owned by the statgrab library will be reused in follow-up calls
+to the same statistic grabbing function within the same thread. The
+memory is freed when the thread ends. This could result in dangling
+pointers when you exchange those pointers between threads. Storage
+which is owned by the caller must be freed by the caller when it's
+not used any more.
+.PP
+\*(T<\fBsg_init\fR\*(T>() must be the first function you call
+before you start to use libstatgrab; it performs all the one-time
+initialisation operations that need setuid/setgid privileges. For
+instance, on *BSD it opens a descriptor to be able to read kernel
+structures later on, and on Solaris it reads the device mappings that
+in some cases are only accessible by root (machines with a /dev/osa).
+To handle this, each statgrab module has a private initialisation
+routine called by \*(T<\fBsg_init\fR\*(T>().
+\*(T<\fBsg_init\fR\*(T>() takes an argument to tell whether
+initialisation errors of components shall abort the library
+initialisation process or not. Regardless of this value, the failing
+module initialisations will usually lead into (partially) unusable
+statistics. Once \*(T<\fBsg_init\fR\*(T>() has run, most of
+the other libstatgrab functions no longer need elevated privileges
+(some Unices require higher privileges to access command line argument
+of processes owned by other users, Linux doesn't deliver some network
+card information to unprivileged users, etc.). It is therefore a
+good idea to call \*(T<\fBsg_drop_privileges\fR\*(T>(), which
+discards setuid and setgid privileges, immediately after you call
+\*(T<\fBsg_init\fR\*(T>(), unless your application has a reason
+for needing setuid or setgid privileges.
+.PP
+\*(T<\fBsg_shutdown\fR\*(T>() should be the very last statgrab
+library function you call. You shouldn't invoke this function when
+any thread is still existing which had made calls to the statgrab
+library. If you don't invoke \*(T<\fBsg_shutdown\fR\*(T>(), it's
+done automatically \*(T<\fBat_exit\fR\*(T>().
+.PP
+Both, \*(T<\fBsg_init\fR\*(T>() and
+\*(T<\fBsg_shutdown\fR\*(T>() use a counter to prevent to early
+destruction of libstatgrab in a process where more than one component
+uses libstatgrab. This counter is guarded by a mutual exclusion
+semaphore when thread capabilities are built in.
+.PP
+\*(T<\fBsg_init\fR\*(T>(), \*(T<\fBsg_shutdown\fR\*(T>() and
+\*(T<\fBsg_drop_privileges\fR\*(T>() return
+SG_ERROR_NONE on success, and any other on
+failure.
+.PP
+For proper thread support, \*(T<\fBsg_lock_mutex\fR\*(T>() and
+\*(T<\fBsg_unlock_mutex\fR\*(T>() are available to allow locking
+system functions which aren't thread safe. While it's generally
+not the wisest idea to mix calls to the statgrab library and similar
+calls to the system library, it is possible to protect known unsafe
+functions. There's currently one system API known to be not
+thread-safe: accessing \*(T<utmp\*(T>. The other
+non-threadsafe functionality used by the statgrab library is the
+global component management during initialisation (e.g. counting
+the number of calls to \*(T<\fBsg_init\fR\*(T>() to prevent
+first call to \*(T<\fBsg_shutdown\fR\*(T>() leaves the library
+in an unusable status).
+
+\fBMutex name\fR: statgrab
+.br
+\fBProtects\fR: statgrab library globals
+.PP
+\fBMutex name\fR: utmp
+.br
+\fBProtects\fR: accessing login records
+
+There's currently no way to get a list of used mutex names, so beg
+that any author which adds more semaphores to guard implementations
+is fair enough to add them here.
+.PP
+It is the intended practice that whenever a libstatgrab function is
+called and subsequently fails that an appropriate error will be set.
+Please use \*(T<\fBsg_get_error\fR\*(T>() and associates to get
+informed about the individual circumstances of the error condition.
+.SH "SEE ALSO"
+\fBlibstatgrab\fR(3)
+\fBsg_get_cpu_stats\fR(3)
+\fBsg_get_disk_io_stats\fR(3)
+\fBsg_get_fs_stats\fR(3)
+\fBsg_get_host_info\fR(3)
+\fBsg_get_load_stats\fR(3)
+\fBsg_get_mem_stats\fR(3)
+\fBsg_get_network_io_stats\fR(3)
+\fBsg_get_network_iface_stats\fR(3)
+\fBsg_get_page_stats\fR(3)
+\fBsg_get_process_stats\fR(3)
+\fBsg_get_swap_stats\fR(3)
+\fBsg_get_user_stats\fR(3)
+\fBsg_get_error\fR(3)
+\fBsg_internal-intro\fR(3)
+.SH WEBSITE
+\(lahttps://libstatgrab.org/\(ra

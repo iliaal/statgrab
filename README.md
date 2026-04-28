@@ -30,6 +30,26 @@ Then add `extension=statgrab` to your `php.ini`.
 fails it falls back to a path probe (`/usr` and `/usr/local`). Pass
 `--with-statgrab=<prefix>` to point at a custom install.
 
+### Bundled libstatgrab (statically linked, leak-fixed)
+
+The repo carries a vendored copy of libstatgrab 0.92.1 under
+`vendor/libstatgrab/` with one local patch (see
+`vendor/libstatgrab/LOCAL_PATCHES.md`) that fixes a process-exit leak
+upstream hasn't released yet. To use it:
+
+```sh
+(cd vendor/libstatgrab && ./configure --enable-static --disable-shared --without-ncurses && make)
+phpize
+./configure --with-statgrab=bundled
+make
+```
+
+The resulting `.so` has no `libstatgrab.so` runtime dependency.
+
+The vendored libstatgrab tree stays LGPL 2.1+ (see `LICENSE.libstatgrab`);
+the extension code stays PHP-3.01 (see `LICENSE`). Dynamic-link or
+static-link, neither license infects the other.
+
 ## API
 
 ### Procedural

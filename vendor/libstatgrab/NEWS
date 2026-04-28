@@ -1,0 +1,324 @@
+libstatgrab NEWS
+https://libstatgrab.org/
+
+PLANS: We're now working towards a 1.0 release which is where we plan
+       to stabilise the API. We'll be doing test releases before hand,
+       but as always we'll like to hear about any bugs found in the
+       current release.
+
+libstatgrab 0.92.1 (27 July 2021)
+ * Fix build with autoconf 2.70+.
+ * Fix CPU stats on older Linux kernels.
+ * Make sure to count processes in an unknown state.
+ * Check if -ltinfo is needed when linking ncurses.
+ * Fixes to build when cross-compiling.
+ * Fix build with -DNDEBUG.
+ * Handle vmmeter changes in FreeBSD 12.
+
+libstatgrab 0.92 (16 July 2019)
+ * Fix various file descriptor leaks.
+ * On Linux, read process thread name from comm where available (fixes
+   FreeScale ARM BSP).
+ * Add more process stat information on MacOS/Darwin.
+ * Fix build on Alpine Linux and NetBSD 8.
+ * Fix build on FreeBSD 12 without COMPAT_FREEBSD11.
+ * Improve collection of data for non-standard Solaris interfaces.
+ * Improve detection of interface link status on Solaris.
+ * Various configure and build fixes.
+ * Ensure modern log4cplus is used correctly.
+
+libstatgrab 0.91 (11 July 2014)
+ * Use /proc/mounts on Linux where available. Note that this
+   potentially results in different data appearing in the filesystem
+   statistics. To override the choice use the --with-mnttab configure
+   flag.
+ * Add a new field named device_canonical to the filesystem statistics.
+   This always holds the real device and is useful in the case where
+   device_name is a symlink.
+ * Fix list miscounting in sg_set_valid_filesystems.
+ * Fix buffer overrun when dealing with a larger number of processes.
+ * Fix divide by zero display problem in saidar.
+ * Building of examples is now disabled by default. Use the
+   --enable-examples configure flag to build them if required.
+ * Logging (log4cplus) is now only enabled if the --enable-logging
+   configure flag is given.
+ * When logging with log4cplus is enabled, properties files are
+   installed in to ${prefix}/etc. Both statgrab and saidar will search
+   this location when starting up. These files can be used to
+   configure the behaviour of log4cplus.
+ * Add Graphite output support in statgrab.
+     (Thanks to John Lyman)
+ * Fix test suite problem when doing a VPATH build.
+ * Install distribution documentation (such as this file) in to
+   ${prefix}/share/doc/libstatgrab.
+ * Various other minor bug fixes identified by compiler warnings.
+ * Update code for the Windows platform. This is incomplete, but we
+   included the changes to give anyone else working in this area a
+   better starting point. We welcome pull requests to further improve
+   this code. The original pull request can be found in #36.
+     (Thanks to Brent Cook)
+
+libstatgrab 0.90 (08 August 2013)
+ * Please note the API in 0.90 has changed, so applications using
+   libstatgrab will need to be updated to support the changes.
+
+ * Thread safety and reentrant functions.
+ * API unification (every stats call is now able to return multiple entries).
+ * Complete rewrite of internal memory management (eases future extensions).
+ * Add experimental support for tracing using log4cplus.
+ * Complete the ports for AIX, HP-UX and most of the widely used
+   BSD-based operating systems.
+ * Complete the port for Darwin/MacOS X including basic Mach.
+ * Clean up the FreeBSD and Solaris implementations.
+ * Remove explicit support for Linux 2.4.
+
+libstatgrab 0.17 (21 February 2010)
+ * Provide iowait cpu information on Linux version 2.5.41 or later.
+ * Display data for ZFS on Solaris.
+ * Dynamically get list of valid filesystems on FreeBSD.
+     (Thanks to Baptiste Daroussin)
+ * Support FreeBSD 9.
+ * Use utmpx when available (required for FreeBSD 9).
+     (Thanks to Ed Schouten)
+ * Support larger amounts of memory on FreeBSD.
+     (Thanks to Tom Bird)
+
+libstatgrab 0.16 (13 March 2008)
+ * Fix saidar build on Solaris with Sun's compiler.
+ * Add support for FreeBSD 8.0.
+ * Fix build on "armel" Debian port.
+     (Thanks to Riku Voipio and Martin Guy)
+ * Fix statgrab-make-mrtg-config on machines with no swap.
+     (Thanks to Tom Carlson)
+
+libstatgrab 0.15 (14 July 2007)
+ * Fix breakages in memory stats on OpenBSD that were introduced in
+   the last release.
+     (Thanks to David Love)
+ * Update internal string functions and some related cleanups.
+     (Thanks to David Love)
+ * Fix compile warning on FreeBSD.
+
+libstatgrab 0.14 (08 January 2007)
+ * Fix memory stats on OpenBSD.
+ * Add colour support to saidar.
+     (Thanks to Angelina Carlton)
+ * Fix CPU stats on Solaris - swap and iowait were incorrectly reported.
+ * Fix kstat related memory leaks on Solaris.
+     (Thanks to Javier Donaire)
+ * Fix network stats on some unusual Solaris setups.
+ * Fix process time_spent on Linux.
+     (Thanks to Fred Barnes)
+ * Make interface up status check the link status as well.
+     (Thanks to Michelangelo Vassallo)
+ * Fix build on NetBSD 3.
+     (Thanks to Wijnand Wiersma)
+ * Rework curses detection code in the configure script.
+ * Fix bug that caused saidar to crash when the window was rapidly resized.
+
+libstatgrab 0.13 (19 March 2006)
+ * Fix build problems with recent linux kernels.
+ * Make saidar truncate disk/inteface/mount names to fit in display.
+ * Add WIN32 support using MINGW (not widely tested).
+ * Fix network interface up/down status on Solaris.
+ * Add extern "C" to header file to make linking with C++ code easier.
+ * Fix statgrab to cope with filesystem paths containing dots.
+ * Make NFS a legal filesystem type on all platforms.
+ * A few minor build fixes.
+
+libstatgrab 0.12 (31 July 2005)
+ * More details added to filesystem statistics.
+     (Patches provided by Roman Neuhauser)
+ * Rework Linux partition detection.
+ * Fix compile error in network stats on Linux 2.6.
+     (Patches provided by Scott Lampert)
+ * Change name of duplex value in network interface stats.
+     NOTE: this minor change breaks the API.
+ * Manual pages for saidar, statgrab and the other tools.
+ * Fix minor typo in statgrab usage output.
+ * Support for Solaris 10.
+ * Support for FreeBSD 7.
+
+libstatgrab 0.11.1 (03 March 2005)
+ * Add NFS to list of supported filesystems.
+ * Fix reporting of network interface duplex settings on Linux.
+ * Fix saidar to support negative FS usage.
+
+libstatgrab 0.11 (09 November 2004)
+ * Add support for HP-UX 11.11.
+    (Patches provided by Roy Keene)
+ * Minor fixes to statgrab mrtg tools.
+ * Minor fixes to saidar.
+ * Minor code cleanups and fixes to libstatgrab.
+
+libstatgrab 0.10.3 (24 August 2004)
+
+ * Add -f flag to statgrab to display floating-point numbers multiplied
+   by an integer.
+ * Add -K, -M and -G flags to statgrab to show byte counts in kibibytes,
+   mebibytes or gibibytes.
+ * Make statgrab-make-mrtg-config use the new flags to scale extremely
+   large or small numbers so that mrtg can handle them.
+ * Make statgrab-make-mrtg-config automatically detect network interface
+   speeds.
+ * Add support for FreeBSD 6.0-CURRENT.
+
+libstatgrab 0.10.2 (27 July 2004)
+
+ * Fix shared library version that when backwards in 0.10.1.
+
+libstatgrab 0.10.1 (26 July 2004)
+
+ * Use DESTDIR correctly when setting permissions at install time.
+ * Fix disk stats to work with OpenBSD 3.5.
+ * Fix disk stats on NetBSD 2.0 (statvfs instead of statfs).
+ * Fix memory leak in process stats on NetBSD 2.0.
+ * Add vxfs (Veritas filesystem) to list of known filesystems
+   on Solaris.
+ * Add more variables to the pkg-config file to suggest suitable
+   ownership and permissions for binaries using libstatgrab.
+ * Make sure statgrab.h can safely be included twice.
+ * Fix statgrab to display network interface names even if they
+   don't have IO stats (like the loopback interface on Solaris).
+ * Add error reporting function that grabs errno.
+
+libstatgrab 0.10 (20 May 2004)
+
+ * All function and structure names now follow a standardised
+   naming scheme. This will break compatibility with existing
+   programs. To use pre-0.10 compatibility functions:
+
+     #define SG_ENABLE_DEPRECATED
+     #include <statgrab.h>
+
+ * New process stats function added to provide full details
+   on currently running processes. See sg_get_process_stats
+   for details.
+ * Compare functions provided for process, network, and disk io
+   statistics. These can be used with qsort.
+ * Error reporting functions added. See sg_get_error and
+   associated functions.
+ * Support added for NetBSD 2.0.
+ * Lots of code tidying.
+ * Python bindings now exist in a separate package:
+     https://libstatgrab.org/pystatgrab/
+
+libstatgrab 0.9 (10 March 2004)
+
+ * Added network interface information:
+     speed, duplex, up/down.
+ * Added more statistics on network interfaces:
+     i/o packets, i/o errors, and collisions.
+ * Added support for OpenBSD 3.3.
+ * Added support for DragonFly BSD 1.0.
+ * No longer need elevated privileges on most platforms:
+     FreeBSD 5, NetBSD, and OpenBSD.
+     (see PLATFORMS file for details on which OS's need elevated privileges)
+ * Minor changes to the return types of the python bindings functions.
+
+ * PLEASE NOTE: this will break binary (only) compatibility.
+
+libstatgrab 0.8.2 (11 February 2004)
+
+ * Fixes to add support for Solaris 6.
+ * Python bindings available in extras directory.
+ * Some tidying up of code.
+
+libstatgrab 0.8.1 (21 January 2004)
+
+ * The library part of libstatgrab is now released under the LGPL.
+   (the tools are still released under the GPL)
+ * File descriptor leak fixed on Linux.
+ * strlcpy/strlcat functions added for Solaris 7 to fix compile.
+ * statgrab_init error behaviour fixed (primarly for Solaris 7).
+ * Some incorrect #includes moved.
+ * Significant speed increases to the Solaris disk mapping code in
+   statgrab_init, which improves startup time.
+ * Minor fix for saidar's -d flag and negative numbers.
+
+libstatgrab 0.8 (06 January 2004)
+
+ * Support for Linux 2.6.
+ * Support for Cygwin.
+ * Use cNtNdNsN names on Solaris instead of sdN.
+ * Fixes and optimisations to saidar.
+ * Fixes to the --disable-saidar and --disable-statgrab configure flags.
+ * New function to drop elevated privileges some OS's require.
+   (after using the init function)
+
+libstatgrab 0.7 (22 October 2003)
+
+ * Support for NetBSD 1.6.x.
+ * FreeBSD code optimised.
+ * Initialise function allows programs to drop extra privileges (on *BSD).
+ * saidar now works even if it can't get all statistics.
+ * List of known file systems increased on Linux and *BSD.
+ * Minor bug fixes.
+ * Tested (and working) on Solaris 9 x86, Linux 2.2 on alpha, and
+   Linux 2.4 on amd64.
+
+libstatgrab 0.6.1 (18 October 2003)
+
+ * Support for FreeBSD 5.1/sparc64.
+ * Bugs fixed in FreeBSD memory statistics.
+ * saidar displays disk percentages more "correctly".
+ * Bug fixed displaying hostname in saidar.
+ * statgrab now handles unusual /dev layouts more gracefully.
+ * Minor packaging changes.
+
+libstatgrab 0.6 (09 October 2003)
+
+ * saidar, a curses-based tool, has been added to give an overview of
+   the current system statistics.
+ * Added support for FreeBSD 5.1.
+ * Documentation is now available in manpages.
+ * Fixed major bug in the FreeBSD diskio stats.
+ * Added a .pc file for pkgconfig.
+
+libstatgrab 0.5.1 (09 September 2003)
+
+ * Network stats wrap-around bug fixed on Linux and FreeBSD
+ * Linux now reads disk information from /proc/partitions if available.
+   This results in it getting data for all the disks.
+ * An additional tool, statgrab, has been added to allow external programs
+   to easily parse statistics generated by libstatgrab.
+ * Scripts to generate MRTG (www.mrtg.org) configs with statgrab have
+   been added. This allows graphs to be generated from system stats.
+
+libstatgrab 0.5 (25 August 2003)
+
+ * Fixed a bug with process stats on FreeBSD.
+ * Added documentation in 'docs' directory.
+ * Added examples in 'examples' directory.
+
+libstatgrab 0.4 (09 April 2003)
+
+ * Support added for FreeBSD 4.x (not tested on 5.x).
+
+libstatgrab 0.3.4 (31 March 2003)
+
+ * Fixed memory leak, and file descriptor leak on linux.
+
+libstatgrab 0.3.3 (22 March 2003)
+
+ * Network statistics wraparound code was broken on interfaces that
+   transfered no data - typically second interfaces that weren't
+   connected.
+
+libstatgrab 0.3.2 (21 March 2003)
+
+ * Network statistics wraparound fix.
+
+libstatgrab 0.3.1 (12 March 2003)
+
+ * Fixed network statistics on Solaris 7 or below.
+ * Disk IO statistics are correctly reported.
+
+libstatgrab 0.3 (10 March 2003)
+
+ * Support added for Linux with a 2.4 kernel.
+
+libstatgrab 0.2 (03 March 2003)
+
+ * Initial working release for Solaris (tested on 7, 8, and 9).
+

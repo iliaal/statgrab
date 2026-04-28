@@ -1,0 +1,45 @@
+'\" -*- coding: us-ascii -*-
+.if \n(.g .ds T< \\FC
+.if \n(.g .ds T> \\F[\n[.fam]]
+.de URL
+\\$2 \(la\\$1\(ra\\$3
+..
+.if \n(.g .mso www.tmac
+.TH sg_internal-intro 3 2019-03-08 libstatgrab ""
+.SH NAME
+sg_internal-intro \- get system statistics
+.SH SYNOPSIS
+'nh
+.nf
+\*(T<#include "tools.h"\*(T>
+.fi
+.sp 1
+'hy
+.SH DESCRIPTION
+The statgrab library is organised into components, whereby each
+component contains interrelated functions. Other components are made
+known to the globals component by filling a
+\*(T<sg_comp_init\*(T> structure and appending it to
+the list \*(T<comp_info\*(T> in
+\*(T<\fIsrc/libstatgrab/globals.c\fR\*(T>. See
+\fBsg_comp_init\fR(3)
+for details.
+.PP
+The error managing component is a mixed one, partially public (getting
+error status), partially private (modifying error status). The last
+error is held per thread once error component initialisation is run
+once.
+.PP
+The memory management is done by the vector and tools components. The
+memory management covers optimised vector management (creating,
+resizing, freeing, comparing, ...) and dynamic storage management
+(improved string management).
+.SH "SEE ALSO"
+\fBlibstatgrab\fR(3)
+\fBsg_intro\fR(3)
+\fBsg_set_error\fR(3)
+\fBsg_comp_init\fR(3)
+\fBsg_vector_create\fR(3)
+\fBsg_update_string\fR(3)
+.SH WEBSITE
+\(lahttps://libstatgrab.org/\(ra

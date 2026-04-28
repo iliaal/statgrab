@@ -4,6 +4,48 @@ All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org).
 
+## [2.2.0] - 2026-04-27
+
+### Added
+
+- Vendored libstatgrab 0.92.1 source tree under `vendor/libstatgrab/`,
+  carrying one local patch (LGPL 2.1+, source-reviewable, with full
+  diff under `vendor/libstatgrab/patches/`).
+- `--with-statgrab=bundled` configure option. Statically links the
+  patched libstatgrab into the extension `.so`, removing the runtime
+  `libstatgrab.so` dependency and shipping the leak fix without
+  waiting on system packages. Pre-build the lib first
+  (`(cd vendor/libstatgrab && ./configure --enable-static --disable-shared --without-ncurses && make)`),
+  then `./configure --with-statgrab=bundled`. System libstatgrab
+  remains the default.
+- `LICENSE.libstatgrab` (LGPL 2.1 text) at the repo root, sitting next
+  to our PHP-3.01 `LICENSE`. Two licenses, neither infects the other:
+  the libstatgrab tree under `vendor/` stays LGPL, our extension code
+  stays PHP-3.01.
+
+### Fixed
+
+- libstatgrab leak at process exit: `sg_destroy_globals` walked the
+  component table with `size_t i = lengthof(comp_info) - 1; while (i--)`,
+  starting body iterations at `i = N-2` so the last component
+  (`sg_user_init`) never had its `cleanup_fn` invoked. Net effect:
+  the user-stats vector and every owned string (login_name, device,
+  hostname, record_id) leaked at every process exit, ~1.1 KB. Patch
+  shipped as `vendor/libstatgrab/patches/0001-fix-sg-destroy-globals-off-by-one.patch`
+  and submitted upstream.
+- Our own leak: `sg_get_cpu_percents_r` returns owned memory; we
+  weren't calling `sg_free_stats_buf` on it. 144 bytes per call to
+  `sg_cpu_percent_usage()` /  `Statgrab::cpu()`. Now freed.
+
+### Changed
+
+- Tests no longer require `ASAN_OPTIONS=detect_leaks=0` when run
+  against the bundled libstatgrab. The env var is still set in
+  `.release-config` and CI for safety against system libstatgrab
+  shipping the unpatched library.
+
+[2.2.0]: https://github.com/iliaal/statgrab/releases/tag/2.2.0
+
 ## [2.1.0] - 2026-04-27
 
 Feature-additive, BC-preserving. Surfaces libstatgrab 0.92 capability that

@@ -53,11 +53,13 @@ static void php_sg_cpu_percent(zval *return_value, zend_long source)
 {
 	size_t entries = 0;
 	sg_cpu_percents *cpu = NULL;
+	int cpu_owned = 0; /* whether we must sg_free_stats_buf(cpu) on the way out */
 
 	switch (source) {
 	case sg_entire_cpu_percent: {
 		/* Use the reentrant variant to dodge first-call NULL: sample stats
-		 * explicitly and convert via _r. */
+		 * explicitly and convert via _r. The _r return owns its memory --
+		 * caller must free with sg_free_stats_buf. */
 		sg_cpu_stats *stats = sg_get_cpu_stats(&entries);
 		if (stats == NULL || entries == 0) {
 			php_sg_emit_error();
@@ -65,6 +67,7 @@ static void php_sg_cpu_percent(zval *return_value, zend_long source)
 			return;
 		}
 		cpu = sg_get_cpu_percents_r(stats, &entries);
+		cpu_owned = 1;
 		break;
 	}
 	case sg_last_diff_cpu_percent:
@@ -92,6 +95,10 @@ static void php_sg_cpu_percent(zval *return_value, zend_long source)
 	PHP_SG_ADD_DOUBLE(return_value, "swap",         cpu[0].swap);
 	PHP_SG_ADD_DOUBLE(return_value, "nice",         cpu[0].nice);
 	PHP_SG_ADD_LONG  (return_value, "previous_run", cpu[0].time_taken);
+
+	if (cpu_owned) {
+		sg_free_stats_buf(cpu);
+	}
 }
 
 static void php_sg_cpu_stats(zval *return_value, int diff)

@@ -1,0 +1,66 @@
+libstatgrab PLATFORMS
+https://libstatgrab.org/
+
+Supported Platforms
+===================
+
+libstatgrab-0.92 has been tested using CI on the following platforms:
+
+Alpine Linux 3.7, 3.8, 3.9 and 3.10
+Arch Linux
+CentOS 6 (i386 and x86_64) and 7
+Debian 8 and 9
+DragonFlyBSD 5
+Fedora 28, 29 and 30
+FreeBSD 11 and 12 (i386 and amd64)
+Gentoo Linux
+HardenedBSD 11 and 12
+NetBSD 8
+OpenBSD 6
+openSUSE 42
+Oracle Linux 7
+Solaris 9 (SPARC), 10 (SPARC) and 11 (x86)
+Ubuntu 16.04 (i386 and x86_64) and 18.04
+MacOS 10.12, 10.13 and 10.14 (manually - no CI, yet)
+
+libstatgrab-0.90 has been tested to work on the following platforms:
+
+DragonFly BSD 3.4
+FreeBSD 7
+FreeBSD 8 (i386, amd64)
+FreeBSD 9 (i386, amd64, sparc64, ia64)
+FreeBSD 10 (i386, amd64, sparc64, ia64)
+FreeBSD 11-CURRENT (i386, amd64, sparc64, ia64)
+HP-UX 11.11 (parisc)
+HP-UX 11.23 (parisc)
+HP-UX 11.23 (ia64)
+HP-UX 11.31 (ia64)
+Linux 2.6 (Ubuntu 10.04, SLES 9-11, Red Hat 6, CentOS 6)
+Linux 3.X (Ubuntu 12.04, 14.04)
+Linux 4.X (Fedora 22, 23)
+NetBSD 5.1
+NetBSD 6.1
+OpenBSD 4.9
+OpenBSD 5.3
+Solaris 8 (sparc & x86)
+Solaris 9 (sparc & x86)
+Solaris 10 (sparc & x86)
+AIX 5.2
+AIX 5.3
+AIX 6.1
+
+Platform Specific Notes
+=======================
+
+Unless explicitly mentioned below assume that libstatgrab will run on
+any of the platforms above without any elevated privileges.
+
+Linux
+-----
+
+On older Linux kernels root privileges are required to get the
+statistics returned by the get_network_iface_stats function. Not
+having these privileges results in NULL being returned.
+
+Also note that this cannot be solved by calling sg_init and then
+sg_drop_privileges at this stage.

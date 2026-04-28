@@ -15,10 +15,18 @@ build_matrix:
 
 configure_base: --with-statgrab
 
-# libstatgrab leaks ~1KB at process exit (upstream bug, not ours).
-# Tests must run with leak detection disabled or they fail under ASan.
+# libstatgrab 0.92.1 (system package) has an off-by-one in
+# sg_destroy_globals that leaks the user-stats vector at process exit.
+# Vendored copy under vendor/libstatgrab/ patches it; --with-statgrab=bundled
+# uses the patched static archive. CI defaults to system libstatgrab and
+# silences the lib's leak via the env var below.
 test_env:
   - ASAN_OPTIONS=detect_leaks=0
+
+extra_build_variants:
+  - bundled: |
+      (cd vendor/libstatgrab && ./configure --enable-static --disable-shared --without-ncurses && make -j$(nproc))
+      phpize && ./configure --with-statgrab=bundled && make -j$(nproc)
 
 asan_test: yes                      # debug PHP 8.4 catches per-call leaks; lib-level
                                      # leaks suppressed via the env var above

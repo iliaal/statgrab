@@ -1,0 +1,173 @@
+'\" t -*- coding: us-ascii -*-
+.if \n(.g .ds T< \\FC
+.if \n(.g .ds T> \\F[\n[.fam]]
+.de URL
+\\$2 \(la\\$1\(ra\\$3
+..
+.if \n(.g .mso www.tmac
+.TH sg_get_network_iface_stats 3 2019-03-08 libstatgrab ""
+.SH NAME
+sg_get_network_iface_stats, sg_get_network_iface_stats_r, sg_free_network_iface_stats, sg_network_iface_compare_name \- get network interface statistics
+.SH SYNOPSIS
+'nh
+.nf
+\*(T<#include <statgrab.h>\*(T>
+.fi
+.sp 1
+.PP
+.fi
+.ad l
+\*(T<sg_network_iface_stats *\fBsg_get_network_iface_stats\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(size_t *\fIentries\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_network_iface_stats *\fBsg_get_network_iface_stats_r\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(size_t *\fIentries\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<sg_error \fBsg_free_network_iface_stats\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(sg_network_iface_stats *\fIdata\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+.PP
+.fi
+.ad l
+\*(T<int \fBsg_network_iface_compare_name\fR\*(T> \kx
+.if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
+'in \n(.iu+\nxu
+\*(T<(const void *\fIva\fR, const void *\fIvb\fR);\*(T>
+'in \n(.iu-\nxu
+.ad b
+'hy
+.SH DESCRIPTION
+The functions \*(T<\fBsg_get_network_iface_stats\fR\*(T>() and
+\*(T<\fBsg_get_network_iface_stats_r\fR\*(T>() return statistics
+about the network interfaces in the machine. Specifically, they return
+the speed of the interface, the duplex state, and whether it is
+currently up. Both functions take an optional
+\*(T<entries\*(T> parameter, which points (when given)
+to a size_t to take the number of returned vector entries.
+.PP
+\fBAPI Shortcut\fR
+.TS
+allbox ;
+l | l | l.
+T{
+function
+T}	T{
+returns
+T}	T{
+data owner
+T}
+.T&
+l | l | l
+l | l | l.
+T{
+sg_get_network_iface_stats
+T}	T{
+\*(T<sg_network_iface_stats\*(T> *
+T}	T{
+libstatgrab (thread local)
+T}
+T{
+sg_get_network_iface_stats_r
+T}	T{
+\*(T<sg_network_iface_stats\*(T> *
+T}	T{
+caller
+T}
+.TE
+.PP
+The \*(T<sg_network_iface_stats\*(T> vectors received from
+\*(T<\fBsg_get_network_iface_stats_r\fR\*(T>() must be freed using
+\*(T<\fBsg_free_network_iface_stats\fR\*(T>() when not needed
+any more. The caller is responsible for doing it.
+.PP
+Additionally a support function for \*(T<\fBqsort\fR\*(T>(3)
+in available: \*(T<\fBsg_network_iface_compare_name\fR\*(T>().
+
+\fBSort Example\fR
+.PP
+.nf
+\*(T<
+size_t entries;
+sg_network_iface_stats *network_iface_stats = NULL;
+while( NULL != ( network_iface_stats = sg_get_network_iface_stats(&entries) ) ) {
+    /* order entries alphabetically using the mountpoint */
+    qsort( network_iface_stats, entries, sizeof(network_iface_stats[0]), &sg_network_iface_compare_name );
+    show_network_iface_stats( network_iface_stats );
+}
+        \*(T>
+.fi
+.SH "RETURN VALUES"
+The \*(T<\fBsg_get_network_iface_stats\fR\*(T> returns a
+pointer to a structure of type
+\*(T<sg_network_iface_stats\*(T>.
+.PP
+.nf
+\*(T<
+typedef enum{
+        SG_IFACE_DUPLEX_FULL,
+        SG_IFACE_DUPLEX_HALF,
+        SG_IFACE_DUPLEX_UNKNOWN
+}sg_iface_duplex;
+    \*(T>
+.fi
+.PP
+Note: The \*(T<SG_IFACE_DUPLEX_UNKNOWN\*(T>
+value could mean that duplex hasn't been negotiated yet.
+.PP
+.nf
+\*(T<
+typedef struct {
+        char *interface_name;
+        int speed;
+        sg_iface_duplex duplex;
+        int up;
+        time_t systime;
+} sg_network_iface_stats;
+    \*(T>
+.fi
+.TP 
+\*(T<interface_name\*(T> 
+The name known to the operating system.
+(eg. on linux it might be eth0)
+.TP 
+\*(T<speed\*(T> 
+The speed of the interface, in megabits/sec.
+.TP 
+\*(T<duplex\*(T> 
+The duplex state the interface is in. See sg_iface_duplex
+for permitted values.
+.TP 
+\*(T<up\*(T> 
+Whether the interface is up.
+.TP 
+\*(T<systime\*(T>
+The timestamp when the above stats where collected in seconds
+since epoch
+.SH BUGS
+Getting specific details may require elevated privileges, eg. on Linux
+the interface speed isn't visible to non-privileged processes.
+.PP
+The compare functions exist rather for backward compatibility than
+for functionality enhancements. Limited flexibility (e.g. reverse
+order) and lack of optimising opportunities for the compiler leads
+to the recommendation to implement the required compare routines
+locally.
+.SH "SEE ALSO"
+\fBstatgrab\fR(3)
+.SH WEBSITE
+\(lahttps://libstatgrab.org/\(ra

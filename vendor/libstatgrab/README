@@ -1,0 +1,102 @@
+libstatgrab README
+https://libstatgrab.org/
+
+Description
+-----------
+
+libstatgrab is a library for accessing information from the system
+for statistical purposes. It could be used for software that monitors
+the system for alerting or graphing purposes.
+
+License
+-------
+
+The library part of libstatgrab is licensed under the GNU LGPL, but
+the tools and examples are licensed under the GNU GPL.
+
+Building and Installation
+-------------------------
+
+After downloading and extracting libstatgrab, configure and build as
+follows;
+
+./configure
+make
+
+Then install as root;
+
+make install
+
+There are, of course, the usual GNU-style configure options;
+
+  --prefix=PREFIX
+
+For detailed documentation on the generic installation process, please
+read the INSTALL document.
+
+Enhancements of the general configuration process can be seen in the
+sections "Optional Features" and "Optional Packages" of the output of
+
+  ./configure --help
+
+Library RPATH issues on Linux
+-----------------------------
+
+You may find on Linux that after installation the utilities don't know
+where to find the libstatgrab library. This is because RPATH is only
+set when the installation prefix is not in /etc/ld.so.conf.
+
+After installing libstatgrab to a prefix in /etc/ld.so.conf make sure
+to run ldconfig so that the /etc/ld.so.cache file is updated. This
+ensures that the runtime linker can find the library.
+
+If in doubt, just run ldconfig after installation.
+
+Prerequisites
+-------------
+
+While libstatgrab will run without additional prerequisites, there are
+several options to improve it.
+
+* Having a recent (1.1.0+) version of log4cplus will enable tracing
+  functionalities. log4cplus can be found on its homepage here;
+  http://log4cplus.sourceforge.net/
+  Note that libstatgrab doesn't enable its logging automatically,
+  the using applications must do it.
+* Manpages can be built automatically when docbook2x is installed.
+  See http://docbook2x.sourceforge.net/
+* On Linux it might be necessary to install the ncurses-dev (or
+  equivalent) package to build saidar.
+
+Platform Specific Notes
+-----------------------
+
+Please see the PLATFORMS file for supported platforms and specific
+notes on using libstatgrab on those platforms.
+
+Notes for packagers - parallel installation
+-------------------------------------------
+
+If you're packaging libstatgrab for an operating system distribution
+you may hit the problem that you need both a 0.90+ API version of
+libstatgrab installed and an older version. Some applications have not
+yet been updated to use the newer API.
+
+We've decided at the moment not to make any changes to libstatgrab to
+allow parallel installation of multiple versions. You can see our
+discussion on that at the page below, including how the problem has
+been worked around on one operating system.
+
+https://github.com/libstatgrab/libstatgrab/issues/25#issuecomment-45358744
+
+We're not sure how big this problem actually is, so please let us know
+if you're hitting it. This may make us reconsider our position.
+
+Problems?
+---------
+
+If you have any problems or find a bug, please let us know.
+
+https://libstatgrab.org/issues
+
+Thank you for using libstatgrab.
