@@ -36,7 +36,7 @@ libstatgrab is the right primitive: cross-platform, well-tested, in the package 
 | Modern PHP errors | `E_WARNING` on library failure, `ArgumentCountError` for arg-count violations |
 | BC-preserved 2006 names | Drop-in for callers of the original PECL extension, with the 2.0 BC notes documented below |
 
-## 🛠️ Why native
+## ⚖️ Why native
 
 The case for a native extension is the failure modes of the alternatives:
 
