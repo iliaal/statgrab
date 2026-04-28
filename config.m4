@@ -1,63 +1,55 @@
-dnl $Id: config.m4,v 1.10 2006/03/23 18:43:49 iliaa Exp $
 dnl config.m4 for extension statgrab
 
-PHP_ARG_WITH(statgrab, for libstatgrab support,
-[  --with-statgrab             Include libstatgrab support])
-
-AC_DEFUN([PHP_STATGRAB_CHECK_VERSION],[
-  PHP_CHECK_LIBRARY(statgrab, get_network_iface_stats,        [AC_DEFINE(HAVE_STATGRAB_09,             1, [ ])], [], [ -L$STATGRAB_DIR/lib $STATGRAB_SHARED_LIBADD ])
-])
+PHP_ARG_WITH([statgrab], [for libstatgrab support],
+[AS_HELP_STRING([[--with-statgrab[=DIR]]],
+  [Include libstatgrab >= 0.92 support [DIR=detect via pkg-config]])])
 
 if test "$PHP_STATGRAB" != "no"; then
-  SEARCH_PATH="/usr/local /usr $PHP_STATGRAB"
-  SEARCH_FOR="/include/statgrab.h"
-  if test -r $PHP_STATGRAB/$SEARCH_FOR; then # path given as parameter
-     STATGRAB_DIR=$PHP_STATGRAB
-  else # search default path list
-    AC_MSG_CHECKING([for libstatgrab files in default path])
+  AC_PATH_PROG([PKG_CONFIG], [pkg-config], [no])
+
+  STATGRAB_FOUND=no
+
+  if test "x$PKG_CONFIG" != "xno"; then
+    if test "$PHP_STATGRAB" = "yes" || test -z "$PHP_STATGRAB"; then
+      if $PKG_CONFIG --atleast-version=0.92 libstatgrab 2>/dev/null; then
+        STATGRAB_VERSION=`$PKG_CONFIG --modversion libstatgrab`
+        STATGRAB_INCS=`$PKG_CONFIG --cflags libstatgrab`
+        STATGRAB_LIBSDESC=`$PKG_CONFIG --libs libstatgrab`
+        AC_MSG_CHECKING([for libstatgrab via pkg-config])
+        AC_MSG_RESULT([$STATGRAB_VERSION])
+        PHP_EVAL_INCLINE([$STATGRAB_INCS])
+        PHP_EVAL_LIBLINE([$STATGRAB_LIBSDESC], [STATGRAB_SHARED_LIBADD])
+        STATGRAB_FOUND=yes
+      fi
+    fi
+  fi
+
+  if test "$STATGRAB_FOUND" = "no"; then
+    if test "$PHP_STATGRAB" = "yes" || test -z "$PHP_STATGRAB"; then
+      SEARCH_PATH="/usr/local /usr"
+    else
+      SEARCH_PATH="$PHP_STATGRAB"
+    fi
+    STATGRAB_DIR=
+    AC_MSG_CHECKING([for libstatgrab in default paths])
     for i in $SEARCH_PATH ; do
-      if test -r $i/$SEARCH_FOR; then
+      if test -r "$i/include/statgrab.h"; then
         STATGRAB_DIR=$i
-        AC_MSG_RESULT(found in $i)
+        AC_MSG_RESULT([found in $i])
+        break
       fi
     done
-  fi
-  
-  if test -z "$STATGRAB_DIR"; then
+    if test -z "$STATGRAB_DIR"; then
       AC_MSG_RESULT([not found])
-      AC_MSG_ERROR([Please reinstall the libstatgrab distribution from http://www.i-scream.org/libstatgrab/])
+      AC_MSG_ERROR([libstatgrab >= 0.92 not found. Install libstatgrab-dev (Debian/Ubuntu),
+                    libstatgrab-devel (RHEL/Fedora), libstatgrab (Homebrew/FreeBSD pkg) or
+                    pass --with-statgrab=<prefix>.])
+    fi
+    PHP_ADD_INCLUDE([$STATGRAB_DIR/include])
+    PHP_ADD_LIBRARY_WITH_PATH([statgrab], [$STATGRAB_DIR/$PHP_LIBDIR], [STATGRAB_SHARED_LIBADD])
   fi
 
-  PHP_ADD_INCLUDE($STATGRAB_DIR/include)
-  OLD_CFLAGS=$CFLAGS
-  PHP_CHECK_LIBRARY(devstat, devstat_selectdevs, [PHP_ADD_LIBRARY(devstat,,DEVSTAT_SHARED_LIBADD)])
-  CFLAGS="$CFLAGS $DEVSTAT_SHARED_LIBADD"
-
-  LIBNAME=statgrab
-  LIBSYMBOL=sg_init
-
-  PHP_CHECK_LIBRARY($LIBNAME,$LIBSYMBOL,
-  [
-    PHP_ADD_LIBRARY_WITH_PATH($LIBNAME, $STATGRAB_DIR/lib, STATGRAB_SHARED_LIBADD)
-    AC_DEFINE(HAVE_STATGRABLIB,1,[ ])
-    PHP_STATGRAB_CHECK_VERSION
-  ],[
-    AC_MSG_ERROR([wrong libstatgrab version or lib not found, Statgrab version 0.10+ is required.])
-  ],[
-    -L$STATGRAB_DIR/lib -lm
-  ])
-  dnl
-  PHP_SUBST(STATGRAB_SHARED_LIBADD)
-
-  AC_TRY_COMPILE([
-#include <statgrab.h>
-  ], [
-sg_network_iface_stats p;
-p.dup = SG_IFACE_DUPLEX_UNKNOWN;
-  ], [
-    AC_DEFINE(HAVE_OLD_STATGRAB, 1, [ ])
-  ])
-
-  PHP_NEW_EXTENSION(statgrab, statgrab.c, $ext_shared)
+  PHP_SUBST([STATGRAB_SHARED_LIBADD])
+  AC_DEFINE([HAVE_LIBSTATGRAB], 1, [Have libstatgrab >= 0.92])
+  PHP_NEW_EXTENSION([statgrab], [statgrab.c], [$ext_shared])
 fi
-

@@ -1,0 +1,26 @@
+# /release-ext config for statgrab
+# This file IS committed; it carries the structural metadata that travels
+# with the repo across forks/clones.
+
+extension_name: statgrab           # detected from composer-less repo / php_statgrab.h
+version_macro:  PHP_STATGRAB_VERSION
+version_file:   php_statgrab.h
+repo_slug:      iliaal/statgrab
+
+build_matrix:
+  - PHP-8.3                         # ~/php-install-PHP-8.3 (debug)
+  - PHP-8.4                         # ~/php-install-PHP-8.4 (debug, ASan)
+  - PHP-8.4-release                 # ~/php-install-PHP-8.4-release
+  - PHP-8.5                         # ~/php-install-PHP-8.5
+
+configure_base: --with-statgrab
+
+# libstatgrab leaks ~1KB at process exit (upstream bug, not ours).
+# Tests must run with leak detection disabled or they fail under ASan.
+test_env:
+  - ASAN_OPTIONS=detect_leaks=0
+
+asan_test: yes                      # debug PHP 8.4 catches per-call leaks; lib-level
+                                     # leaks suppressed via the env var above
+
+windows_ci: false                   # libstatgrab Windows port is unmaintained; skip

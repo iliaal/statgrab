@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package packagerversion="1.10.13" version="2.1" xmlns="http://pear.php.net/dtd/package-2.1"
+         xmlns:tasks="http://pear.php.net/dtd/tasks-1.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0
+                             http://pear.php.net/dtd/tasks-1.0.xsd
+                             http://pear.php.net/dtd/package-2.1
+                             http://pear.php.net/dtd/package-2.1.xsd">
+ <name>statgrab</name>
+ <channel>pecl.php.net</channel>
+ <summary>System statistics via libstatgrab</summary>
+ <description>
+A PHP extension wrapping libstatgrab (https://libstatgrab.org), the
+cross-platform system-statistics library. Exposes CPU, memory, swap,
+disk I/O, filesystem, network, page, process, user, and host metrics
+through both a procedural API (the original 2006 surface) and a
+modern Statgrab class.
+
+Requires libstatgrab >= 0.92 and PHP >= 8.0.
+ </description>
+ <lead>
+  <name>Ilia Alshanetsky</name>
+  <user>iliaa</user>
+  <email>ilia@ilia.ws</email>
+  <active>yes</active>
+ </lead>
+ <date>2026-04-27</date>
+ <version>
+  <release>2.0.0</release>
+  <api>2.0.0</api>
+ </version>
+ <stability>
+  <release>stable</release>
+  <api>stable</api>
+ </stability>
+ <license uri="http://www.php.net/license">PHP License 3.01</license>
+ <notes>
+Full modernization for the PHP 8.x era.
+
+- PHP 8.0 - 8.5 floor; libstatgrab 0.92+ floor.
+- New Statgrab class with method-style accessors and class constants.
+- Richer return shapes: host/cpu/fs/iface/process structs gained the
+  fields libstatgrab added since the 2006 era.
+- BC fixes: page_stats/page_stats_diff de-swapped, process gid/egid
+  return the actual gid/egid (not uid/euid).
+- BC break: sg_user_stats() returns per-user records instead of a flat
+  username array; libstatgrab dropped the underlying name_list field.
+- Numeric counters now return int instead of stringified numbers.
+
+See CHANGELOG.md for the full list.
+ </notes>
+ <contents>
+  <dir name="/">
+   <file name="config.m4"               role="src" />
+   <file name="statgrab.c"              role="src" />
+   <file name="statgrab.stub.php"       role="src" />
+   <file name="statgrab_arginfo.h"      role="src" />
+   <file name="php_statgrab.h"          role="src" />
+   <file name="CREDITS"                 role="doc" />
+   <file name="CHANGELOG.md"            role="doc" />
+   <file name="README.md"               role="doc" />
+   <file name="LICENSE"                 role="doc" />
+   <dir name="tests">
+    <file name="001-load.phpt"            role="test" />
+    <file name="002-host.phpt"            role="test" />
+    <file name="003-load.phpt"            role="test" />
+    <file name="004-memory.phpt"          role="test" />
+    <file name="005-swap.phpt"            role="test" />
+    <file name="006-cpu-percent.phpt"     role="test" />
+    <file name="007-cpu-totals.phpt"      role="test" />
+    <file name="008-process-count.phpt"   role="test" />
+    <file name="009-fs.phpt"              role="test" />
+    <file name="010-network-io.phpt"      role="test" />
+    <file name="011-iface.phpt"           role="test" />
+    <file name="012-pages.phpt"           role="test" />
+    <file name="013-process-stats.phpt"   role="test" />
+    <file name="014-process-sort.phpt"    role="test" />
+    <file name="015-users.phpt"           role="test" />
+    <file name="016-oo-class.phpt"        role="test" />
+    <file name="017-no-args.phpt"         role="test" />
+   </dir>
+  </dir>
+ </contents>
+ <dependencies>
+  <required>
+   <php>
+    <min>8.0.0</min>
+    <max>8.99.99</max>
+   </php>
+   <pearinstaller>
+    <min>1.10.0</min>
+   </pearinstaller>
+  </required>
+ </dependencies>
+ <providesextension>statgrab</providesextension>
+ <extsrcrelease/>
+</package>
