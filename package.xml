@@ -8,15 +8,32 @@
                              http://pear.php.net/dtd/package-2.1.xsd">
  <name>statgrab</name>
  <channel>pecl.php.net</channel>
- <summary>System statistics via libstatgrab</summary>
+ <summary>PHP bindings for libstatgrab: CPU, memory, disk, network, and process metrics.</summary>
  <description>
-A PHP extension wrapping libstatgrab (https://libstatgrab.org), the
-cross-platform system-statistics library. Exposes CPU, memory, swap,
-disk I/O, filesystem, network, page, process, user, and host metrics
-through both a procedural API (the original 2006 surface) and a
-modern Statgrab class.
+PHP bindings for libstatgrab (https://libstatgrab.org), the
+cross-platform system-statistics library. Reads CPU usage, memory
+and swap, disk I/O, filesystem space and inode counts, network
+interface counters, page-in/out, process tables, logged-in users,
+and host metadata. Works on glibc Linux, musl, macOS, FreeBSD,
+NetBSD, OpenBSD, and Solaris.
 
-Requires libstatgrab >= 0.92 and PHP >= 8.0.
+Two API surfaces ship in parallel: a procedural one matching the
+original 2006 PECL release (sg_cpu_percent_usage, sg_memory_stats,
+sg_process_stats, ...) and a Statgrab class with method-based
+access and class constants for sort orders, process states, and
+duplex modes. Both surfaces emit E_WARNING and return false on
+libstatgrab errors; the OO surface throws on argument-count
+violations. sg_get_error_details() returns the underlying string
+and numeric code from libstatgrab.
+
+The repo also ships a vendored libstatgrab 0.92.1 with one local
+patch fixing an sg_destroy_globals off-by-one that leaks the
+user-stats vector at process exit (submitted upstream, not yet
+released). Configure with --with-statgrab=bundled to statically
+link the patched copy and ship the leak fix without waiting on
+system packages.
+
+Requires libstatgrab >= 0.92 and PHP >= 8.0 (NTS).
  </description>
  <lead>
   <name>Ilia Alshanetsky</name>
