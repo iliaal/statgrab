@@ -4,6 +4,8 @@ All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org).
 
+## [Unreleased]
+
 ## [2.2.0] - 2026-04-27
 
 ### Added
@@ -49,6 +51,7 @@ this project adheres to [Semantic Versioning](https://semver.org).
   `.release-config` and CI for safety against system libstatgrab
   shipping the unpatched library.
 
+[Unreleased]: https://github.com/iliaal/statgrab/compare/2.2.0...HEAD
 [2.2.0]: https://github.com/iliaal/statgrab/releases/tag/2.2.0
 
 ## [2.1.0] - 2026-04-27
