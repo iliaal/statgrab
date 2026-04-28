@@ -24,6 +24,7 @@
             }
         ],
         "support-zts": false,
-        "support-nts": true
+        "support-nts": true,
+        "os-families-exclude": ["windows"]
     }
 }
