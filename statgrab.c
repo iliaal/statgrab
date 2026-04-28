@@ -556,7 +556,7 @@ static void php_sg_set_valid_filesystems(zval *return_value, zval *zfs)
 			efree(buf);
 			zend_argument_type_error(1,
 				"array entries must be strings, %s given at offset %zu",
-				zend_zval_value_name(entry), i);
+				zend_zval_type_name(entry), i);
 			RETURN_THROWS();
 		}
 		buf[i++] = Z_STRVAL_P(entry);
