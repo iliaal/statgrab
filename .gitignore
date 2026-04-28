@@ -80,6 +80,7 @@ tests/*.out
 tests/*.php
 tests/*.sh
 tests/*.mem
+statgrab-*.tgz
 
 # vendored libstatgrab autotools sources: extension's gitignore above
 # globally hides configure.ac et al. for the phpize build, but the
