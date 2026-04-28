@@ -80,3 +80,10 @@ tests/*.out
 tests/*.php
 tests/*.sh
 tests/*.mem
+
+# vendored libstatgrab autotools sources: extension's gitignore above
+# globally hides configure.ac et al. for the phpize build, but the
+# vendored tree needs its own configure.ac tracked so autoreconf can
+# regenerate the rest in CI / on a fresh checkout.
+!/vendor/libstatgrab/configure.ac
+!/vendor/libstatgrab/**/Makefile.am
