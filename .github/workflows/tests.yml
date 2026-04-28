@@ -8,14 +8,14 @@ on:
 
 jobs:
   linux:
+    name: PHP ${{ matrix.php }} - Linux NTS
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
         php: ['8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
-    name: PHP ${{ matrix.php }} (Linux)
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install libstatgrab
         run: sudo apt-get update && sudo apt-get install -y libstatgrab-dev pkg-config
@@ -24,22 +24,20 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          tools: phpize
+          tools: phpize, php-config
           coverage: none
 
-      - name: phpize + configure
+      - name: Build extension
         run: |
           phpize
           ./configure --with-statgrab
+          make -j$(nproc)
 
-      - name: make
-        run: make -j$(nproc)
-
-      - name: make test
+      - name: Run test suite
         env:
+          NO_INTERACTION: 1
           ASAN_OPTIONS: detect_leaks=0
         run: |
-          NO_INTERACTION=1 \
-          REPORT_EXIT_STATUS=1 \
-          TEST_PHP_ARGS="-q -d extension=$(pwd)/modules/statgrab.so" \
-          make test
+          export TEST_PHP_EXECUTABLE=$(which php)
+          export TEST_PHP_ARGS="-d extension=$(pwd)/modules/statgrab.so"
+          php run-tests.php --show-diff -g FAIL,BORK,LEAK,XLEAK tests/

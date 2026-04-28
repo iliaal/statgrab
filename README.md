@@ -1,6 +1,8 @@
 # statgrab
 
+[![Tests](https://github.com/iliaal/statgrab/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/iliaal/statgrab/actions/workflows/tests.yml)
 [![License: PHP-3.01](https://img.shields.io/badge/License-PHP--3.01-green.svg)](http://www.php.net/license/3_01.txt)
+[![License: LGPL-2.1+ (vendored libstatgrab)](https://img.shields.io/badge/vendored-LGPL--2.1%2B-blue.svg)](LICENSE.libstatgrab)
 
 A PHP extension wrapping [libstatgrab](https://libstatgrab.org), the
 cross-platform system-statistics library. Originally released to PECL
