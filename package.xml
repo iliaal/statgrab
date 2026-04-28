@@ -26,8 +26,8 @@ Requires libstatgrab >= 0.92 and PHP >= 8.0.
  </lead>
  <date>2026-04-27</date>
  <version>
-  <release>2.0.0</release>
-  <api>2.0.0</api>
+  <release>2.1.0</release>
+  <api>2.1.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -35,17 +35,18 @@ Requires libstatgrab >= 0.92 and PHP >= 8.0.
  </stability>
  <license uri="http://www.php.net/license">PHP License 3.01</license>
  <notes>
-Full modernization for the PHP 8.x era.
+Feature-additive, BC-preserving release. Surfaces libstatgrab 0.92
+capability that 2.0.0 didn't expose.
 
-- PHP 8.0 - 8.5 floor; libstatgrab 0.92+ floor.
-- New Statgrab class with method-style accessors and class constants.
-- Richer return shapes: host/cpu/fs/iface/process structs gained the
-  fields libstatgrab added since the 2006 era.
-- BC fixes: page_stats/page_stats_diff de-swapped, process gid/egid
-  return the actual gid/egid (not uid/euid).
-- BC break: sg_user_stats() returns per-user records instead of a flat
-  username array; libstatgrab dropped the underlying name_list field.
-- Numeric counters now return int instead of stringified numbers.
+- New procedural functions: sg_valid_filesystems,
+  sg_set_valid_filesystems, sg_snapshot, sg_error_details.
+- New OO methods on Statgrab mirroring those.
+- sg_cpu_percent_usage / Statgrab::cpu now take an optional $source
+  argument (CPU_PERCENT_ENTIRE / LAST_DIFF / NEW_DIFF).
+- New systime field on memory/load/swap returns; new context_switches /
+  voluntary_context_switches / involuntary_context_switches / systime
+  on process_stats returns.
+- New class constants: CPU_PERCENT_*, HOST_STATE_*, FS_*, ERROR_*.
 
 See CHANGELOG.md for the full list.
  </notes>
@@ -78,6 +79,13 @@ See CHANGELOG.md for the full list.
     <file name="015-users.phpt"           role="test" />
     <file name="016-oo-class.phpt"        role="test" />
     <file name="017-no-args.phpt"         role="test" />
+    <file name="018-tier-a-systime.phpt"  role="test" />
+    <file name="019-valid-filesystems.phpt" role="test" />
+    <file name="020-snapshot.phpt"        role="test" />
+    <file name="021-error-details.phpt"   role="test" />
+    <file name="022-cpu-percent-source.phpt" role="test" />
+    <file name="023-tier-c-constants.phpt" role="test" />
+    <file name="024-set-valid-filesystems-typeerror.phpt" role="test" />
    </dir>
   </dir>
  </contents>

@@ -49,20 +49,35 @@ static void php_sg_emit_error(void)
 /* CPU                                                                  */
 /* ------------------------------------------------------------------- */
 
-static void php_sg_cpu_percent(zval *return_value)
+static void php_sg_cpu_percent(zval *return_value, zend_long source)
 {
 	size_t entries = 0;
-	/* The non-reentrant sg_get_cpu_percents wants library-internal state to
-	 * have been seeded by a prior sg_get_cpu_stats from userland; on first
-	 * call it returns NULL with no error code. Sample stats explicitly and
-	 * compute percents from them via the reentrant variant. */
-	sg_cpu_stats *stats = sg_get_cpu_stats(&entries);
-	if (stats == NULL || entries == 0) {
-		php_sg_emit_error();
+	sg_cpu_percents *cpu = NULL;
+
+	switch (source) {
+	case sg_entire_cpu_percent: {
+		/* Use the reentrant variant to dodge first-call NULL: sample stats
+		 * explicitly and convert via _r. */
+		sg_cpu_stats *stats = sg_get_cpu_stats(&entries);
+		if (stats == NULL || entries == 0) {
+			php_sg_emit_error();
+			RETVAL_FALSE;
+			return;
+		}
+		cpu = sg_get_cpu_percents_r(stats, &entries);
+		break;
+	}
+	case sg_last_diff_cpu_percent:
+	case sg_new_diff_cpu_percent:
+		cpu = sg_get_cpu_percents_of((sg_cpu_percent_source)source, &entries);
+		break;
+	default:
+		php_error_docref(NULL, E_WARNING,
+			"invalid CPU percent source " ZEND_LONG_FMT, source);
 		RETVAL_FALSE;
 		return;
 	}
-	sg_cpu_percents *cpu = sg_get_cpu_percents_r(stats, &entries);
+
 	if (cpu == NULL || entries == 0) {
 		php_sg_emit_error();
 		RETVAL_FALSE;
@@ -230,9 +245,10 @@ static void php_sg_load(zval *return_value)
 	}
 
 	array_init(return_value);
-	PHP_SG_ADD_DOUBLE(return_value, "min1",  l[0].min1);
-	PHP_SG_ADD_DOUBLE(return_value, "min5",  l[0].min5);
-	PHP_SG_ADD_DOUBLE(return_value, "min15", l[0].min15);
+	PHP_SG_ADD_DOUBLE(return_value, "min1",    l[0].min1);
+	PHP_SG_ADD_DOUBLE(return_value, "min5",    l[0].min5);
+	PHP_SG_ADD_DOUBLE(return_value, "min15",   l[0].min15);
+	PHP_SG_ADD_LONG  (return_value, "systime", l[0].systime);
 }
 
 /* ------------------------------------------------------------------- */
@@ -251,10 +267,11 @@ static void php_sg_mem(zval *return_value)
 	}
 
 	array_init(return_value);
-	PHP_SG_ADD_LONG(return_value, "total", m[0].total);
-	PHP_SG_ADD_LONG(return_value, "free",  m[0].free);
-	PHP_SG_ADD_LONG(return_value, "used",  m[0].used);
-	PHP_SG_ADD_LONG(return_value, "cache", m[0].cache);
+	PHP_SG_ADD_LONG(return_value, "total",   m[0].total);
+	PHP_SG_ADD_LONG(return_value, "free",    m[0].free);
+	PHP_SG_ADD_LONG(return_value, "used",    m[0].used);
+	PHP_SG_ADD_LONG(return_value, "cache",   m[0].cache);
+	PHP_SG_ADD_LONG(return_value, "systime", m[0].systime);
 }
 
 static void php_sg_swap(zval *return_value)
@@ -269,9 +286,10 @@ static void php_sg_swap(zval *return_value)
 	}
 
 	array_init(return_value);
-	PHP_SG_ADD_LONG(return_value, "total", s[0].total);
-	PHP_SG_ADD_LONG(return_value, "free",  s[0].free);
-	PHP_SG_ADD_LONG(return_value, "used",  s[0].used);
+	PHP_SG_ADD_LONG(return_value, "total",   s[0].total);
+	PHP_SG_ADD_LONG(return_value, "free",    s[0].free);
+	PHP_SG_ADD_LONG(return_value, "used",    s[0].used);
+	PHP_SG_ADD_LONG(return_value, "systime", s[0].systime);
 }
 
 /* ------------------------------------------------------------------- */
@@ -438,13 +456,17 @@ static void php_sg_process_stats_impl(zval *return_value, zend_long sort_order, 
 		PHP_SG_ADD_LONG(&row, "gid",         ps[i].gid);
 		PHP_SG_ADD_LONG(&row, "euid",        ps[i].euid);
 		PHP_SG_ADD_LONG(&row, "egid",        ps[i].egid);
-		PHP_SG_ADD_LONG(&row, "size",        ps[i].proc_size);
-		PHP_SG_ADD_LONG(&row, "size_in_mem", ps[i].proc_resident);
-		PHP_SG_ADD_LONG(&row, "start_time",  ps[i].start_time);
-		PHP_SG_ADD_LONG(&row, "time_spent",  ps[i].time_spent);
-		PHP_SG_ADD_DOUBLE(&row, "cpu_percent", ps[i].cpu_percent);
-		PHP_SG_ADD_LONG(&row, "nice",        ps[i].nice);
-		PHP_SG_ADD_LONG(&row, "state",       ps[i].state);
+		PHP_SG_ADD_LONG(&row, "size",                         ps[i].proc_size);
+		PHP_SG_ADD_LONG(&row, "size_in_mem",                  ps[i].proc_resident);
+		PHP_SG_ADD_LONG(&row, "start_time",                   ps[i].start_time);
+		PHP_SG_ADD_LONG(&row, "time_spent",                   ps[i].time_spent);
+		PHP_SG_ADD_DOUBLE(&row, "cpu_percent",                ps[i].cpu_percent);
+		PHP_SG_ADD_LONG(&row, "nice",                         ps[i].nice);
+		PHP_SG_ADD_LONG(&row, "state",                        ps[i].state);
+		PHP_SG_ADD_LONG(&row, "context_switches",             ps[i].context_switches);
+		PHP_SG_ADD_LONG(&row, "voluntary_context_switches",   ps[i].voluntary_context_switches);
+		PHP_SG_ADD_LONG(&row, "involuntary_context_switches", ps[i].involuntary_context_switches);
+		PHP_SG_ADD_LONG(&row, "systime",                      ps[i].systime);
 		add_next_index_zval(return_value, &row);
 	}
 }
@@ -488,6 +510,96 @@ static void php_sg_users(zval *return_value)
 }
 
 /* ------------------------------------------------------------------- */
+/* 2.1: valid filesystems / snapshot / error details                    */
+/* ------------------------------------------------------------------- */
+
+static void php_sg_valid_filesystems(zval *return_value)
+{
+	size_t entries = 0;
+	const char **fs = sg_get_valid_filesystems(&entries);
+
+	if (fs == NULL) {
+		php_sg_emit_error();
+		RETVAL_FALSE;
+		return;
+	}
+
+	array_init(return_value);
+	for (size_t i = 0; i < entries; i++) {
+		if (fs[i]) {
+			add_next_index_string(return_value, fs[i]);
+		}
+	}
+}
+
+static void php_sg_set_valid_filesystems(zval *return_value, zval *zfs)
+{
+	HashTable *ht = Z_ARRVAL_P(zfs);
+	size_t n = zend_hash_num_elements(ht);
+
+	/* libstatgrab wants a NULL-terminated const char *[]. It strdup's the
+	 * strings, so freeing our pointer array immediately is safe. */
+	const char **buf = (const char **)emalloc(sizeof(const char *) * (n + 1));
+	size_t i = 0;
+
+	zval *entry;
+	ZEND_HASH_FOREACH_VAL(ht, entry) {
+		ZVAL_DEREF(entry);
+		if (Z_TYPE_P(entry) != IS_STRING) {
+			efree(buf);
+			zend_argument_type_error(1,
+				"array entries must be strings, %s given at offset %zu",
+				zend_zval_value_name(entry), i);
+			RETURN_THROWS();
+		}
+		buf[i++] = Z_STRVAL_P(entry);
+	} ZEND_HASH_FOREACH_END();
+	buf[i] = NULL;
+
+	sg_error rc = sg_set_valid_filesystems(buf);
+	efree(buf);
+
+	if (rc != SG_ERROR_NONE) {
+		php_sg_emit_error();
+		RETURN_FALSE;
+	}
+	RETURN_TRUE;
+}
+
+static void php_sg_do_snapshot(zval *return_value)
+{
+	if (sg_snapshot() != SG_ERROR_NONE) {
+		php_sg_emit_error();
+		RETURN_FALSE;
+	}
+	RETURN_TRUE;
+}
+
+static void php_sg_error_details(zval *return_value)
+{
+	sg_error_details det;
+	memset(&det, 0, sizeof det);
+
+	sg_error code = sg_get_error_details(&det);
+	if (code == SG_ERROR_NONE) {
+		RETVAL_FALSE;
+		return;
+	}
+
+	array_init(return_value);
+	PHP_SG_ADD_LONG(return_value, "code",  code);
+	PHP_SG_ADD_LONG(return_value, "errno", det.errno_value);
+	add_assoc_string_ex(return_value, "message", sizeof("message") - 1,
+		(char *)sg_str_error(code));
+	if (det.error_arg) {
+		add_assoc_string_ex(return_value, "arg", sizeof("arg") - 1,
+			(char *)det.error_arg);
+	} else {
+		add_assoc_null_ex(return_value, "arg", sizeof("arg") - 1);
+	}
+}
+
+/* ------------------------------------------------------------------- */
 /* Procedural function dispatchers                                      */
 /* ------------------------------------------------------------------- */
 
@@ -498,7 +610,16 @@ static void php_sg_users(zval *return_value)
 		body;                                                   \
 	}
 
-PHP_SG_PROC_NOARGS(sg_cpu_percent_usage,  php_sg_cpu_percent(return_value))
+PHP_FUNCTION(sg_cpu_percent_usage)
+{
+	zend_long source = sg_entire_cpu_percent;
+	ZEND_PARSE_PARAMETERS_START(0, 1)
+		Z_PARAM_OPTIONAL
+		Z_PARAM_LONG(source)
+	ZEND_PARSE_PARAMETERS_END();
+	php_sg_cpu_percent(return_value, source);
+}
+
 PHP_SG_PROC_NOARGS(sg_cpu_totals,         php_sg_cpu_stats(return_value, 0))
 PHP_SG_PROC_NOARGS(sg_cpu_diff,           php_sg_cpu_stats(return_value, 1))
 PHP_SG_PROC_NOARGS(sg_diskio_stats,       php_sg_diskio(return_value, 0))
@@ -515,6 +636,18 @@ PHP_SG_PROC_NOARGS(sg_page_stats_diff,    php_sg_pages(return_value, 1))
 PHP_SG_PROC_NOARGS(sg_process_count,      php_sg_process_count(return_value))
 PHP_SG_PROC_NOARGS(sg_user_stats,         php_sg_users(return_value))
 PHP_SG_PROC_NOARGS(sg_network_iface_stats, php_sg_iface(return_value))
+PHP_SG_PROC_NOARGS(sg_valid_filesystems,  php_sg_valid_filesystems(return_value))
+PHP_SG_PROC_NOARGS(sg_snapshot,           php_sg_do_snapshot(return_value))
+PHP_SG_PROC_NOARGS(sg_error_details,      php_sg_error_details(return_value))
+
+PHP_FUNCTION(sg_set_valid_filesystems)
+{
+	zval *zfs;
+	ZEND_PARSE_PARAMETERS_START(1, 1)
+		Z_PARAM_ARRAY(zfs)
+	ZEND_PARSE_PARAMETERS_END();
+	php_sg_set_valid_filesystems(return_value, zfs);
+}
 
 PHP_FUNCTION(sg_process_stats)
 {
@@ -546,7 +679,16 @@ PHP_METHOD(Statgrab, __construct)
 		body;                                                   \
 	}
 
-PHP_SG_METHOD_NOARGS(cpu,          php_sg_cpu_percent(return_value))
+PHP_METHOD(Statgrab, cpu)
+{
+	zend_long source = sg_entire_cpu_percent;
+	ZEND_PARSE_PARAMETERS_START(0, 1)
+		Z_PARAM_OPTIONAL
+		Z_PARAM_LONG(source)
+	ZEND_PARSE_PARAMETERS_END();
+	php_sg_cpu_percent(return_value, source);
+}
+
 PHP_SG_METHOD_NOARGS(cpuStats,     php_sg_cpu_stats(return_value, 0))
 PHP_SG_METHOD_NOARGS(cpuDiff,      php_sg_cpu_stats(return_value, 1))
 PHP_SG_METHOD_NOARGS(filesystems,  php_sg_fs(return_value))
@@ -555,8 +697,20 @@ PHP_SG_METHOD_NOARGS(load,         php_sg_load(return_value))
 PHP_SG_METHOD_NOARGS(memory,       php_sg_mem(return_value))
 PHP_SG_METHOD_NOARGS(swap,         php_sg_swap(return_value))
 PHP_SG_METHOD_NOARGS(processCount, php_sg_process_count(return_value))
-PHP_SG_METHOD_NOARGS(users,        php_sg_users(return_value))
-PHP_SG_METHOD_NOARGS(interfaces,   php_sg_iface(return_value))
+PHP_SG_METHOD_NOARGS(users,             php_sg_users(return_value))
+PHP_SG_METHOD_NOARGS(interfaces,        php_sg_iface(return_value))
+PHP_SG_METHOD_NOARGS(validFilesystems,  php_sg_valid_filesystems(return_value))
+PHP_SG_METHOD_NOARGS(snapshot,          php_sg_do_snapshot(return_value))
+PHP_SG_METHOD_NOARGS(errorDetails,      php_sg_error_details(return_value))
+
+PHP_METHOD(Statgrab, setValidFilesystems)
+{
+	zval *zfs;
+	ZEND_PARSE_PARAMETERS_START(1, 1)
+		Z_PARAM_ARRAY(zfs)
+	ZEND_PARSE_PARAMETERS_END();
+	php_sg_set_valid_filesystems(return_value, zfs);
+}
 
 #define PHP_SG_METHOD_DIFF(method, body)                        \
 	PHP_METHOD(Statgrab, method)                                \

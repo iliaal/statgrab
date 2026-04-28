@@ -4,6 +4,51 @@ All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org).
 
+## [2.1.0] - 2026-04-27
+
+Feature-additive, BC-preserving. Surfaces libstatgrab 0.92 capability that
+2.0.0 dropped on the floor.
+
+### Added
+
+- `sg_valid_filesystems()` / `Statgrab::validFilesystems()` — query the
+  list of fs types libstatgrab considers "real" (the default ~39-entry
+  Linux list excludes nothing automatic, callers can narrow it).
+- `sg_set_valid_filesystems(array)` / `Statgrab::setValidFilesystems()`
+  — override that list. Subsequent `sg_fs_stats()` calls only return
+  mounts whose `fs_type` is in the configured set. Throws `TypeError`
+  on a non-string array entry.
+- `sg_snapshot()` / `Statgrab::snapshot()` — re-seed libstatgrab's
+  internal counters explicitly. Useful before a sliding-window cpu /
+  diff sample in a long-running worker.
+- `sg_error_details()` / `Statgrab::errorDetails()` — return the
+  libstatgrab error code, message, errno, and arg as an array (or
+  `false` if no error pending). Pair with the `false` return from any
+  stat function for a richer diagnostic.
+- `sg_cpu_percent_usage(int $source = Statgrab::CPU_PERCENT_ENTIRE)`
+  / `Statgrab::cpu(int $source = ...)` — let callers choose between
+  `CPU_PERCENT_ENTIRE` (cumulative since boot, default), `LAST_DIFF`
+  (since previous internal snapshot), and `NEW_DIFF` (since this call).
+  The default keeps the 2.0 behavior.
+- New struct fields exposed in returns:
+  - `sg_memory_stats`, `sg_load_stats`, `sg_swap_stats` — `systime`
+  - `sg_process_stats` — `context_switches`,
+    `voluntary_context_switches`, `involuntary_context_switches`,
+    `systime`
+- New class constants:
+  - `Statgrab::CPU_PERCENT_ENTIRE | LAST_DIFF | NEW_DIFF`
+  - `Statgrab::HOST_STATE_UNKNOWN | PHYSICAL | VIRTUAL_MACHINE |
+    PARAVIRTUAL_MACHINE | HARDWARE_VIRTUALIZED` — interpret the
+    `host_state` field on `sg_general_stats()`.
+  - `Statgrab::FS_UNKNOWN | REGULAR | SPECIAL | LOOPBACK | REMOTE |
+    LOCAL | ALLTYPES` — bitmask values for the `device_type` field on
+    `sg_fs_stats()`.
+  - `Statgrab::ERROR_NONE | INVALID_ARGUMENT | OPEN | OPENDIR |
+    PERMISSION | UNSUPPORTED` — most useful libstatgrab error codes
+    for programmatic catches.
+
+[2.1.0]: https://github.com/iliaal/statgrab/releases/tag/2.1.0
+
 ## [2.0.0] - 2026-04-27
 
 Full modernization of the 2006 PECL release. PHP 8.0–8.5 floor,
