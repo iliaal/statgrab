@@ -4,14 +4,47 @@
 [![License: PHP-3.01](https://img.shields.io/badge/License-PHP--3.01-green.svg)](http://www.php.net/license/3_01.txt)
 [![License: LGPL-2.1+ (vendored libstatgrab)](https://img.shields.io/badge/vendored-LGPL--2.1%2B-blue.svg)](LICENSE.libstatgrab)
 
-A PHP extension wrapping [libstatgrab](https://libstatgrab.org), the
+![statgrab](images/statgrab-hero.jpg)
+
+A native PHP extension wrapping [libstatgrab](https://libstatgrab.org), the
 cross-platform system-statistics library. Originally released to PECL
-in 2006 against libstatgrab 0.6; this 2.0.0 line is a full
+in 2006 against libstatgrab 0.6; the 2.0.0 line is a full
 modernization for the PHP 8.0+ era against libstatgrab 0.92+.
 
-Supports PHP 8.0 through 8.5 on glibc Linux, musl, macOS, and *BSD.
+Supports PHP 8.0 through 8.5 on glibc Linux, musl, macOS, and \*BSD.
 
-## Install
+## The Problem
+
+Reading system stats from PHP usually means one of three bad options:
+
+- Shell out to `top`, `vmstat`, `df`, `ps` and parse the output. Fragile on every OS update, and `fork`/`exec` overhead adds up if you poll on a schedule.
+- Read `/proc` by hand. Linux-only. Forces hand-rolled regex for every statistic, and the format drifts between kernel releases.
+- Pull in a heavy monitoring framework. Overkill if all you need is a CPU number for a health endpoint.
+
+libstatgrab is the right primitive: cross-platform, well-tested, in the package manager of every modern Unix. But the 2006 PECL binding has not shipped a PHP 8 build, and its 2006 BC quirks (stringified counters, swapped page-stat keys, a flat `name_list` for users) made the old extension awkward even when you could compile it.
+
+## ✨ Key Features
+
+| Feature | Notes |
+|---|---|
+| Cross-platform | glibc Linux, musl, macOS, FreeBSD |
+| Procedural + OO API | 2006 `sg_*` function names preserved; modern `Statgrab` class on top |
+| Bundled libstatgrab option | Vendored 0.92.1 with a leak-fix patch; resulting `.so` has no runtime dependency on `libstatgrab.so` |
+| Modern types | Counters returned as 64-bit `int`, not stringified numbers |
+| Modern PHP errors | `E_WARNING` on library failure, `ArgumentCountError` for arg-count violations |
+| BC-preserved 2006 names | Drop-in for callers of the original PECL extension, with the 2.0 BC notes documented below |
+
+## 🛠️ Why native
+
+This README does not claim a benchmark number. The case for a native extension is not raw throughput, it is the failure modes of the alternatives:
+
+- `exec("top ...")` and friends fork a process per call. The overhead is real if you poll every few seconds, and the output format drifts between OS releases.
+- Hand-parsing `/proc` ties you to Linux and to whatever the kernel decided to print this year. Each file (`/proc/meminfo`, `/proc/loadavg`, `/proc/diskstats`, `/proc/net/dev`) has its own format and edge cases.
+- Calling out to a stats daemon adds a network hop and a daemon to deploy.
+
+statgrab calls libstatgrab in-process. libstatgrab handles the per-OS path (Linux `/proc`, FreeBSD `kvm`, macOS `host_*` APIs) and exposes a single typed surface. The extension wraps that surface with no allocation per call beyond the result array.
+
+## 🚀 Quick Start
 
 ### PIE (recommended on PHP 8.x)
 
@@ -144,6 +177,20 @@ same convention. Argument-count violations on no-arg functions throw
 
 See `CHANGELOG.md` for the full list.
 
+## 🔗 PHP Performance Toolkit
+
+Native PHP extensions for the kinds of work pure-PHP libraries handle slowly:
+
+- **[php_excel](https://github.com/iliaal/php_excel)**: Excel I/O via LibXL.
+- **[mdparser](https://github.com/iliaal/mdparser)**: CommonMark + GitHub Flavored Markdown via cmark-gfm.
+- **[php_clickhouse](https://github.com/iliaal/php_clickhouse)**: native ClickHouse client via clickhouse-cpp.
+
 ## License
 
 [PHP License 3.01](LICENSE).
+
+---
+
+[Follow @iliaa on X](https://x.com/iliaa) • [Blog](https://ilia.ws)
+
+If this saved you from parsing /proc by hand, ⭐ star it!
