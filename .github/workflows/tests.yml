@@ -79,11 +79,11 @@ jobs:
           make -j$(nproc)
           make install
 
-      - name: Build bundled libstatgrab (static)
+      - name: Build bundled libstatgrab (static, PIC)
         run: |
           cd vendor/libstatgrab
           autoreconf -fiv
-          ./configure --enable-static --disable-shared --without-ncurses
+          ./configure --enable-static --disable-shared --without-ncurses --with-pic
           make -j$(nproc)
 
       - name: Build extension against bundled libstatgrab

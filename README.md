@@ -40,7 +40,7 @@ The repo carries a vendored copy of libstatgrab 0.92.1 under
 upstream hasn't released yet. To use it:
 
 ```sh
-(cd vendor/libstatgrab && ./configure --enable-static --disable-shared --without-ncurses && make)
+(cd vendor/libstatgrab && ./configure --enable-static --disable-shared --without-ncurses --with-pic && make)
 phpize
 ./configure --with-statgrab=bundled
 make
