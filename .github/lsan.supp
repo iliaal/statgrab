@@ -1,0 +1,9 @@
+# LeakSanitizer suppressions for statgrab CI ASan job.
+#
+# This file should normally be empty. Add entries here only for leaks
+# inside PHP core or system libraries that surface during shutdown of
+# the cli SAPI. Do NOT suppress leaks coming from libstatgrab or from
+# the statgrab extension itself: those are exactly what this job is
+# meant to catch.
+#
+# Format: leak:<substring matched against any frame in the stack>
