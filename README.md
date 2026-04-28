@@ -36,7 +36,7 @@ libstatgrab is the right primitive: cross-platform, well-tested, in the package 
 
 ## 🛠️ Why native
 
-This README does not claim a benchmark number. The case for a native extension is not raw throughput, it is the failure modes of the alternatives:
+The case for a native extension is the failure modes of the alternatives:
 
 - `exec("top ...")` and friends fork a process per call. The overhead is real if you poll every few seconds, and the output format drifts between OS releases.
 - Hand-parsing `/proc` ties you to Linux and to whatever the kernel decided to print this year. Each file (`/proc/meminfo`, `/proc/loadavg`, `/proc/diskstats`, `/proc/net/dev`) has its own format and edge cases.
