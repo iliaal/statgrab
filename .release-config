@@ -2,33 +2,31 @@
 # This file IS committed; it carries the structural metadata that travels
 # with the repo across forks/clones.
 
-extension_name: statgrab           # detected from composer-less repo / php_statgrab.h
-version_macro:  PHP_STATGRAB_VERSION
-version_file:   php_statgrab.h
-repo_slug:      iliaal/statgrab
+extension: statgrab
+version_macro: PHP_STATGRAB_VERSION
+version_file: php_statgrab.h
+repo: iliaal/statgrab
 
+# Local rebuild matrix /release-ext exercises before tagging. Each entry
+# maps to a $HOME/php-install-PHP-<entry> install. CI covers the broader
+# 8.0..8.5 range plus the ASan-bundled lane via .github/workflows/tests.yml.
 build_matrix:
-  - PHP-8.3                         # ~/php-install-PHP-8.3 (debug)
-  - PHP-8.4                         # ~/php-install-PHP-8.4 (debug, ASan)
-  - PHP-8.4-release                 # ~/php-install-PHP-8.4-release
-  - PHP-8.5                         # ~/php-install-PHP-8.5
+  - PHP-8.3
+  - PHP-8.4
+  - PHP-8.4-release
+  - PHP-8.5
 
-configure_base: --with-statgrab
+configure_base: "--with-statgrab"
 
 # libstatgrab 0.92.1 (system package) has an off-by-one in
 # sg_destroy_globals that leaks the user-stats vector at process exit.
-# Vendored copy under vendor/libstatgrab/ patches it; --with-statgrab=bundled
-# uses the patched static archive. CI defaults to system libstatgrab and
-# silences the lib's leak via the env var below.
+# vendor/libstatgrab/ ships a patched copy; the bundled lane is
+# exercised by the asan-bundled job in tests.yml, not here.
 test_env:
-  - ASAN_OPTIONS=detect_leaks=0
+  ASAN_OPTIONS: "detect_leaks=0"
 
-extra_build_variants:
-  - bundled: |
-      (cd vendor/libstatgrab && ./configure --enable-static --disable-shared --without-ncurses && make -j$(nproc))
-      phpize && ./configure --with-statgrab=bundled && make -j$(nproc)
+# Local ASan re-verify is redundant with CI's asan-bundled lane; turning
+# it off keeps /release-ext fast.
+asan_test: false
 
-asan_test: yes                      # debug PHP 8.4 catches per-call leaks; lib-level
-                                     # leaks suppressed via the env var above
-
-windows_ci: false                   # libstatgrab Windows port is unmaintained; skip
+windows_ci: false                  # libstatgrab Windows port is unmaintained; skip

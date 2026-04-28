@@ -1,0 +1,29 @@
+{
+    "name": "iliaal/statgrab",
+    "type": "php-ext",
+    "description": "PHP extension wrapping libstatgrab, the cross-platform system-statistics library. CPU, memory, disk I/O, filesystems, network interfaces, processes, users.",
+    "keywords": ["system", "monitoring", "statistics", "libstatgrab", "php-extension", "pie", "pecl"],
+    "license": "PHP-3.01",
+    "homepage": "https://github.com/iliaal/statgrab",
+    "authors": [
+        {
+            "name": "Ilia Alshanetsky",
+            "email": "ilia@ilia.ws"
+        }
+    ],
+    "require": {
+        "php": ">=8.0"
+    },
+    "php-ext": {
+        "extension-name": "statgrab",
+        "configure-options": [
+            {
+                "name": "with-statgrab",
+                "description": "Enable libstatgrab support (use =bundled for the vendored, leak-fixed copy)",
+                "needs-value": false
+            }
+        ],
+        "support-zts": false,
+        "support-nts": true
+    }
+}

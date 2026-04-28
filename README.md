@@ -13,6 +13,27 @@ Supports PHP 8.0 through 8.5 on glibc Linux, musl, macOS, and *BSD.
 
 ## Install
 
+### PIE (recommended on PHP 8.x)
+
+[PIE](https://github.com/php/pie) is the PHP Foundation's PECL successor.
+It installs from Packagist, builds against the active `php-config`, and
+produces a loadable `.so`. Make sure libstatgrab is installed first
+(see the From-source section below for the system package names), then:
+
+```sh
+pie install iliaal/statgrab
+```
+
+Then add `extension=statgrab` to your `php.ini`.
+
+### PECL
+
+The package remains in the PECL channel for legacy installers:
+
+```sh
+pecl install statgrab
+```
+
 ### From source
 
 ```sh

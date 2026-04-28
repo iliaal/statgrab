@@ -22,6 +22,11 @@ this project adheres to [Semantic Versioning](https://semver.org).
   to our PHP-3.01 `LICENSE`. Two licenses, neither infects the other:
   the libstatgrab tree under `vendor/` stays LGPL, our extension code
   stays PHP-3.01.
+- **PIE install support.** `composer.json` declares `type: php-ext`
+  with the full `php-ext` block (configure options, NTS support flag),
+  so `pie install iliaal/statgrab` works once the package is registered
+  on Packagist. PECL `pecl install statgrab` continues to work
+  unchanged.
 
 ### Fixed
 
