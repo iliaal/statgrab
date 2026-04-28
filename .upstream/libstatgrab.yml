@@ -1,0 +1,11 @@
+# /release-ext library-freshness gate. Schema: ~/.claude/commands/release-ext.md
+# detected from vendor/libstatgrab/configure.ac (AC_INIT)
+
+pinned: 0.92.1
+vendored_at: vendor/libstatgrab
+resolver: github
+repo: libstatgrab/libstatgrab
+# Upstream tags as LIBSTATGRAB_0_92_1, not vX.Y.Z. tag_regex pulls
+# the underscored version; the gate normalizes _ -> .
+tag_regex: "LIBSTATGRAB_(.+)"
+note: "0.92.1 + LOCAL_PATCHES.md (sg_destroy_globals off-by-one); upstream PR libstatgrab/libstatgrab#141"
