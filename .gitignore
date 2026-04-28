@@ -25,6 +25,21 @@
 /vendor/libstatgrab/examples/**/Makefile
 /vendor/libstatgrab/man/Makefile
 /vendor/libstatgrab/include/Makefile
+/vendor/libstatgrab/libstatgrab.pc
+/vendor/libstatgrab/saidar.properties
+/vendor/libstatgrab/statgrab.properties
+/vendor/libstatgrab/src/statgrab/statgrab
+/vendor/libstatgrab/src/statgrab/statgrab-make-mrtg-config
+/vendor/libstatgrab/src/statgrab/statgrab-make-mrtg-index
+/vendor/libstatgrab/src/saidar/saidar
+/vendor/libstatgrab/tests/testlib/libtestlib.a
+/vendor/libstatgrab/tests/multi_threaded/diff_stats
+/vendor/libstatgrab/tests/multi_threaded/full_stats
+/vendor/libstatgrab/tests/multi_threaded/run_tests
+/vendor/libstatgrab/tests/single_threaded/diff_stats
+/vendor/libstatgrab/tests/single_threaded/full_stats
+/vendor/libstatgrab/tests/single_threaded/run_tests
+/vendor/libstatgrab/tests/testlib/run_tests.t
 
 # build artifacts
 *.la
