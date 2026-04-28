@@ -24,7 +24,7 @@ Requires libstatgrab >= 0.92 and PHP >= 8.0.
   <email>ilia@ilia.ws</email>
   <active>yes</active>
  </lead>
- <date>2026-04-27</date>
+ <date>2026-04-28</date>
  <version>
   <release>2.2.0</release>
   <api>2.2.0</api>
@@ -58,10 +58,12 @@ See CHANGELOG.md for the full list.
    <file name="statgrab.stub.php"       role="src" />
    <file name="statgrab_arginfo.h"      role="src" />
    <file name="php_statgrab.h"          role="src" />
+   <file name="composer.json"           role="doc" />
    <file name="CREDITS"                 role="doc" />
    <file name="CHANGELOG.md"            role="doc" />
    <file name="README.md"               role="doc" />
    <file name="LICENSE"                 role="doc" />
+   <file name="LICENSE.libstatgrab"     role="doc" />
    <dir name="tests">
     <file name="001-load.phpt"            role="test" />
     <file name="002-host.phpt"            role="test" />
