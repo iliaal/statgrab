@@ -789,11 +789,10 @@ PHP_MINIT_FUNCTION(statgrab)
 
 	zend_class_entry *statgrab_ce = register_class_Statgrab();
 #ifdef ZEND_ACC_NOT_SERIALIZABLE
+	/* PHP 8.1+: deny serialization. On 8.0 the flag doesn't exist and the
+	 * deny helpers were removed before release; the class is a stateless
+	 * method bag, so a round-tripped instance is harmless. */
 	statgrab_ce->ce_flags |= ZEND_ACC_NOT_SERIALIZABLE;
-#else
-	/* PHP 8.0: ZEND_ACC_NOT_SERIALIZABLE doesn't exist. Block (un)serialize via handlers. */
-	statgrab_ce->serialize   = zend_class_serialize_deny;
-	statgrab_ce->unserialize = zend_class_unserialize_deny;
 #endif
 
 	/* BC: keep the global SG_* longs from the 2006 API. */
