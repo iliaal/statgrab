@@ -82,6 +82,9 @@ static void php_sg_cpu_percent(zval *return_value, zend_long source)
 	}
 
 	if (cpu == NULL || entries == 0) {
+		if (cpu_owned && cpu) {
+			sg_free_stats_buf(cpu);
+		}
 		php_sg_emit_error();
 		RETVAL_FALSE;
 		return;
@@ -546,7 +549,7 @@ static void php_sg_set_valid_filesystems(zval *return_value, zval *zfs)
 
 	/* libstatgrab wants a NULL-terminated const char *[]. It strdup's the
 	 * strings, so freeing our pointer array immediately is safe. */
-	const char **buf = (const char **)emalloc(sizeof(const char *) * (n + 1));
+	const char **buf = (const char **)safe_emalloc(sizeof(const char *), n + 1, 0);
 	size_t i = 0;
 
 	zval *entry;
@@ -557,6 +560,12 @@ static void php_sg_set_valid_filesystems(zval *return_value, zval *zfs)
 			zend_argument_type_error(1,
 				"array entries must be strings, %s given at offset %zu",
 				zend_zval_type_name(entry), i);
+			RETURN_THROWS();
+		}
+		if (memchr(Z_STRVAL_P(entry), '\0', Z_STRLEN_P(entry))) {
+			efree(buf);
+			zend_argument_value_error(1,
+				"array entries must not contain NUL bytes (offset %zu)", i);
 			RETURN_THROWS();
 		}
 		buf[i++] = Z_STRVAL_P(entry);
@@ -778,7 +787,8 @@ PHP_MINIT_FUNCTION(statgrab)
 			sg_str_error(sg_get_error()));
 	}
 
-	register_class_Statgrab();
+	zend_class_entry *statgrab_ce = register_class_Statgrab();
+	statgrab_ce->ce_flags |= ZEND_ACC_NOT_SERIALIZABLE;
 
 	/* BC: keep the global SG_* longs from the 2006 API. */
 	REGISTER_LONG_CONSTANT("SG_FULL_DUPLEX",    SG_IFACE_DUPLEX_FULL,    CONST_CS | CONST_PERSISTENT);
