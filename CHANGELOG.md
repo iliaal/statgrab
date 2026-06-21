@@ -6,6 +6,13 @@ this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+### Fixed
+- Build on PHP 8.0: the serialization guard now applies only on 8.1+ (`ZEND_ACC_NOT_SERIALIZABLE` is 8.1+, and the older `serialize_deny` helpers were removed before 8.0).
+- Free the CPU-percent result buffer on the zero-entries early return in `Statgrab::cpu()`.
+
+### Security
+- Harden the object boundary: reject embedded NUL bytes in `setValidFilesystems()`, use overflow-safe allocation for the filesystem array on 32-bit, and mark `Statgrab` non-serializable to close a future type-confusion surface.
+
 ## [2.2.0] - 2026-04-27
 
 ### Added
