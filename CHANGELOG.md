@@ -6,6 +6,8 @@ this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [2.2.1] - 2026-07-03
+
 ### Fixed
 - Build on PHP 8.0: the `ZEND_ACC_NOT_SERIALIZABLE` guard is now gated to 8.1+ where the flag exists.
 - Free the CPU-percent result buffer on the zero-entries early return in `Statgrab::cpu()`.
@@ -60,7 +62,8 @@ this project adheres to [Semantic Versioning](https://semver.org).
   `.release-config` and CI for safety against system libstatgrab
   shipping the unpatched library.
 
-[Unreleased]: https://github.com/iliaal/statgrab/compare/2.2.0...HEAD
+[Unreleased]: https://github.com/iliaal/statgrab/compare/2.2.1...HEAD
+[2.2.1]: https://github.com/iliaal/statgrab/releases/tag/2.2.1
 [2.2.0]: https://github.com/iliaal/statgrab/releases/tag/2.2.0
 
 ## [2.1.0] - 2026-04-27
