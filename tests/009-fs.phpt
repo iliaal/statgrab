@@ -10,7 +10,8 @@ if (!is_array($fs)) {
     exit;
 }
 if (count($fs) === 0) {
-    echo "SKIP no fs\n";
+    /* no mounted filesystems to inspect (unusual, but not a failure) */
+    echo "DONE\n";
     exit;
 }
 $row = $fs[0];

@@ -766,25 +766,29 @@ PHP_METHOD(Statgrab, processes)
 
 PHP_MINIT_FUNCTION(statgrab)
 {
-	if (sg_init(1) != SG_ERROR_NONE) {
+	if (sg_init(1) == SG_ERROR_NONE) {
+		sg_initialized = 1;
+
+		/* Seed initial snapshots so derived stats (CPU percent, *_diff) are
+		 * available on the very first user call. Without this, sg_get_cpu_percents
+		 * returns NULL until a second snapshot has been taken. */
+		(void)sg_snapshot();
+
+		/* Best-effort privilege drop. Failure is non-fatal: on Linux the library
+		 * works fine without setuid bits, and a permission error here used to abort
+		 * the whole process via E_ERROR -- bug in the 2006 release. */
+		if (sg_drop_privileges() != SG_ERROR_NONE) {
+			php_error_docref(NULL, E_NOTICE,
+				"libstatgrab: sg_drop_privileges failed: %s",
+				sg_str_error(sg_get_error()));
+		}
+	} else {
+		/* Init failed, but keep registering the class and constants below: the
+		 * procedural functions are already live (module function table), so
+		 * bailing here would leave a lopsided surface -- functions present, class
+		 * and constants gone. Stat calls degrade to a warning + false either way. */
 		php_error_docref(NULL, E_WARNING,
 			"libstatgrab init failed: %s", sg_str_error(sg_get_error()));
-		return SUCCESS;
-	}
-	sg_initialized = 1;
-
-	/* Seed initial snapshots so derived stats (CPU percent, *_diff) are
-	 * available on the very first user call. Without this, sg_get_cpu_percents
-	 * returns NULL until a second snapshot has been taken. */
-	(void)sg_snapshot();
-
-	/* Best-effort privilege drop. Failure is non-fatal: on Linux the library
-	 * works fine without setuid bits, and a permission error here used to abort
-	 * the whole process via E_ERROR -- bug in the 2006 release. */
-	if (sg_drop_privileges() != SG_ERROR_NONE) {
-		php_error_docref(NULL, E_NOTICE,
-			"libstatgrab: sg_drop_privileges failed: %s",
-			sg_str_error(sg_get_error()));
 	}
 
 	zend_class_entry *statgrab_ce = register_class_Statgrab();

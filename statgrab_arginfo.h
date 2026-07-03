@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 2.1.0-handwritten */
+ * Stub hash: 2.2.0-handwritten */
 
 #define ARGINFO_NOARGS_RET_ARRAY_OR_FALSE(name) \
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(name, 0, 0, MAY_BE_ARRAY|MAY_BE_FALSE) \

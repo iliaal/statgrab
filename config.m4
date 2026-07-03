@@ -17,7 +17,7 @@ if test "$PHP_STATGRAB" != "no"; then
     if test ! -r "$BUNDLED_INC/statgrab.h"; then
       AC_MSG_RESULT([statgrab.h not found])
       AC_MSG_ERROR([Bundled libstatgrab not configured. Run:
-                      (cd vendor/libstatgrab && ./configure --enable-static --disable-shared --without-ncurses && make)
+                      (cd vendor/libstatgrab && ./configure --enable-static --disable-shared --without-ncurses --with-pic && make)
                     then re-run ./configure --with-statgrab=bundled.])
     fi
     if test ! -r "$BUNDLED_LIB"; then

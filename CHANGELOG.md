@@ -7,8 +7,10 @@ this project adheres to [Semantic Versioning](https://semver.org).
 ## [Unreleased]
 
 ### Fixed
-- Build on PHP 8.0: the serialization guard now applies only on 8.1+ (`ZEND_ACC_NOT_SERIALIZABLE` is 8.1+, and the older `serialize_deny` helpers were removed before 8.0).
+- Build on PHP 8.0: the `ZEND_ACC_NOT_SERIALIZABLE` guard is now gated to 8.1+ where the flag exists.
 - Free the CPU-percent result buffer on the zero-entries early return in `Statgrab::cpu()`.
+- Bundled-build instructions now pass `--with-pic`; without it the static libstatgrab failed to link into the extension on x86_64.
+- Register the `Statgrab` class and `SG_*` constants even when `sg_init()` fails, so a libstatgrab init error no longer leaves the class and constants missing while the procedural functions stay live.
 
 ### Security
 - Harden the object boundary: reject embedded NUL bytes in `setValidFilesystems()`, use overflow-safe allocation for the filesystem array on 32-bit, and mark `Statgrab` non-serializable to close a future type-confusion surface.
@@ -24,7 +26,7 @@ this project adheres to [Semantic Versioning](https://semver.org).
   patched libstatgrab into the extension `.so`, removing the runtime
   `libstatgrab.so` dependency and shipping the leak fix without
   waiting on system packages. Pre-build the lib first
-  (`(cd vendor/libstatgrab && ./configure --enable-static --disable-shared --without-ncurses && make)`),
+  (`(cd vendor/libstatgrab && ./configure --enable-static --disable-shared --without-ncurses --with-pic && make)`),
   then `./configure --with-statgrab=bundled`. System libstatgrab
   remains the default.
 - `LICENSE.libstatgrab` (LGPL 2.1 text) at the repo root, sitting next

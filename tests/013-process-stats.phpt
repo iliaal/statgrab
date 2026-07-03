@@ -28,20 +28,30 @@ if (!is_float($row['cpu_percent'] ?? null)) {
     echo "FAIL: cpu_percent not float\n";
 }
 
-/* 2006 bug: gid mirrored uid, egid mirrored euid. Modern code reads them
- * separately. We can't assume gid != uid for every process (root runs as 0/0),
- * but at least one process on the system should have a non-zero distinction
- * between uid+gid and euid+egid in practice. */
-$saw_distinct = false;
-foreach ($ps as $r) {
-    if ($r['gid'] !== $r['uid'] || $r['egid'] !== $r['euid']) {
-        $saw_distinct = true;
-        break;
+/* 2006 bug: gid mirrored uid, egid mirrored euid. Cross-check our own
+ * process against the kernel's view via /proc/self/status (Linux, no
+ * posix ext needed): statgrab must report the real uid/gid/euid/egid,
+ * not uid twice. Off Linux (no /proc) the shape checks above still stand. */
+if (is_readable('/proc/self/status')) {
+    $status = file_get_contents('/proc/self/status');
+    if (preg_match('/^Uid:\s+(\d+)\s+(\d+)/m', $status, $u) &&
+        preg_match('/^Gid:\s+(\d+)\s+(\d+)/m', $status, $g)) {
+        $want = ['uid' => (int)$u[1], 'euid' => (int)$u[2],
+                 'gid' => (int)$g[1], 'egid' => (int)$g[2]];
+        $mypid = getmypid();
+        foreach ($ps as $r) {
+            if ($r['pid'] === $mypid) {
+                foreach ($want as $k => $v) {
+                    if ($r[$k] !== $v) {
+                        echo "FAIL: $k {$r[$k]} != /proc $v\n";
+                    }
+                }
+                break;
+            }
+        }
     }
 }
-echo $saw_distinct ? "gid_distinct_from_uid\n" : "all_gid_equal_uid (acceptable but unusual)\n";
 echo "DONE\n";
 ?>
---EXPECTF--
-%s
+--EXPECT--
 DONE

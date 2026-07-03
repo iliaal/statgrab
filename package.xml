@@ -106,6 +106,10 @@ See CHANGELOG.md for the full list.
     <file name="022-cpu-percent-source.phpt" role="test" />
     <file name="023-tier-c-constants.phpt" role="test" />
     <file name="024-set-valid-filesystems-typeerror.phpt" role="test" />
+<file name="025-diskio.phpt" role="test" />
+<file name="026-serialize-denied.phpt" role="test" />
+<file name="027-set-valid-filesystems-nul.phpt" role="test" />
+<file name="028-cpu-percent-sources.phpt" role="test" />
    </dir>
   </dir>
  </contents>
