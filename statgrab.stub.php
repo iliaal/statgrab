@@ -78,7 +78,7 @@ final class Statgrab
     const ERROR_OPEN             = 21;
     const ERROR_OPENDIR          = 22;
     const ERROR_PERMISSION       = 29;
-    const ERROR_UNSUPPORTED      = 41;
+    const ERROR_UNSUPPORTED      = 44;
 
     public function __construct() {}
 

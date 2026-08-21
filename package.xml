@@ -52,19 +52,17 @@ Requires libstatgrab >= 0.92 and PHP >= 8.0 (NTS).
  </stability>
  <license uri="http://www.php.net/license">PHP License 3.01</license>
  <notes>
-Bundled-libstatgrab support and leak fixes.
+PHP 8.0 build fix, boundary hardening, and init-failure fixes.
 
-- Vendored libstatgrab 0.92.1 with one local patch fixing an
-  off-by-one in sg_destroy_globals that leaked the user-stats vector
-  (~1.1 KB) at every process exit. Patch is LGPL 2.1+, lives under
-  vendor/libstatgrab/patches/, submitted upstream.
-- New --with-statgrab=bundled configure option statically links the
-  patched copy. System libstatgrab remains the default.
-- Fixed our own 144-byte-per-call leak in sg_cpu_percent_usage /
-  Statgrab::cpu: sg_get_cpu_percents_r returns owned memory and we
-  weren't freeing it via sg_free_stats_buf.
-- LICENSE.libstatgrab (LGPL 2.1) ships next to LICENSE (PHP-3.01);
-  the two licenses cohabit cleanly.
+- Build on PHP 8.0: ZEND_ACC_NOT_SERIALIZABLE is now gated to 8.1+.
+- Free the CPU-percent result buffer on the zero-entries early return.
+- Bundled-build instructions pass --with-pic so the static libstatgrab
+  links on x86_64.
+- Register the Statgrab class and SG_* constants even when sg_init()
+  fails, instead of leaving a lopsided surface.
+- Security hardening: reject embedded NUL bytes in
+  setValidFilesystems(), use overflow-safe allocation for the
+  filesystem array on 32-bit, mark Statgrab non-serializable.
 
 See CHANGELOG.md for the full list.
  </notes>

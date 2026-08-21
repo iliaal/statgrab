@@ -35,11 +35,20 @@ foreach ($fs as $row) {
 }
 var_dump($bad === false);
 
-/* ERROR_* */
+/* ERROR_* exact values pinned against libstatgrab's sg_error enum
+ * (0.92.x): catches stub transcription drift. */
 var_dump(Statgrab::ERROR_NONE === 0);
-var_dump(Statgrab::ERROR_PERMISSION > 0);
+var_dump(Statgrab::ERROR_INVALID_ARGUMENT === 1);
+var_dump(Statgrab::ERROR_OPEN === 21);
+var_dump(Statgrab::ERROR_OPENDIR === 22);
+var_dump(Statgrab::ERROR_PERMISSION === 29);
+var_dump(Statgrab::ERROR_UNSUPPORTED === 44);
 ?>
 --EXPECT--
+bool(true)
+bool(true)
+bool(true)
+bool(true)
 bool(true)
 bool(true)
 bool(true)

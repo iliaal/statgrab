@@ -6,6 +6,10 @@ this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+### Fixed
+
+- Stub-declared `Statgrab::ERROR_UNSUPPORTED` was 41 (`SG_ERROR_MACHCALL`); now 44 to match libstatgrab's `sg_error` enum, with all ERROR_* constant values pinned by test.
+
 ## [2.2.1] - 2026-07-03
 
 ### Fixed
