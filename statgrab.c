@@ -138,6 +138,19 @@ static void php_sg_cpu_stats(zval *return_value, int diff)
 /* Disk I/O                                                             */
 /* ------------------------------------------------------------------- */
 
+/* Key rows by device/interface name, but never let a duplicate name
+ * silently overwrite an earlier row (multipath/LVM can repeat names):
+ * fall back to numeric indexing instead. */
+static void php_sg_add_named_row(zval *return_value, const char *name, zval *row)
+{
+	if (name && !zend_hash_str_exists(Z_ARRVAL_P(return_value),
+			name, strlen(name))) {
+		add_assoc_zval(return_value, (char *)name, row);
+	} else {
+		add_next_index_zval(return_value, row);
+	}
+}
+
 static void php_sg_diskio(zval *return_value, int diff)
 {
 	size_t entries = 0;
@@ -159,11 +172,7 @@ static void php_sg_diskio(zval *return_value, int diff)
 		PHP_SG_ADD_LONG(&row, "written",    dst[i].write_bytes);
 		PHP_SG_ADD_LONG(&row, "time_frame", dst[i].systime);
 
-		if (dst[i].disk_name) {
-			add_assoc_zval(return_value, dst[i].disk_name, &row);
-		} else {
-			add_next_index_zval(return_value, &row);
-		}
+		php_sg_add_named_row(return_value, dst[i].disk_name, &row);
 	}
 }
 
@@ -332,11 +341,7 @@ static void php_sg_network(zval *return_value, int diff)
 		PHP_SG_ADD_LONG(&row, "collisions",          ns[i].collisions);
 		PHP_SG_ADD_LONG(&row, "time_frame",          ns[i].systime);
 
-		if (ns[i].interface_name) {
-			add_assoc_zval(return_value, ns[i].interface_name, &row);
-		} else {
-			add_next_index_zval(return_value, &row);
-		}
+		php_sg_add_named_row(return_value, ns[i].interface_name, &row);
 	}
 }
 
@@ -361,11 +366,7 @@ static void php_sg_iface(zval *return_value)
 		PHP_SG_ADD_BOOL(&row, "active",  ifs[i].up == SG_IFACE_UP);
 		PHP_SG_ADD_LONG(&row, "systime", ifs[i].systime);
 
-		if (ifs[i].interface_name) {
-			add_assoc_zval(return_value, ifs[i].interface_name, &row);
-		} else {
-			add_next_index_zval(return_value, &row);
-		}
+		php_sg_add_named_row(return_value, ifs[i].interface_name, &row);
 	}
 }
 
@@ -546,6 +547,13 @@ static void php_sg_set_valid_filesystems(zval *return_value, zval *zfs)
 {
 	HashTable *ht = Z_ARRVAL_P(zfs);
 	size_t n = zend_hash_num_elements(ht);
+
+	if (n == 0) {
+		zend_argument_value_error(1,
+			"array must not be empty: an empty list would clear the "
+			"valid filesystems set and make sg_fs_stats() fail");
+		RETURN_THROWS();
+	}
 
 	/* libstatgrab wants a NULL-terminated const char *[]. It strdup's the
 	 * strings, so freeing our pointer array immediately is safe. */

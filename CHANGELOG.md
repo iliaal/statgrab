@@ -9,6 +9,8 @@ this project adheres to [Semantic Versioning](https://semver.org).
 ### Fixed
 
 - Stub-declared `Statgrab::ERROR_UNSUPPORTED` was 41 (`SG_ERROR_MACHCALL`); now 44 to match libstatgrab's `sg_error` enum, with all ERROR_* constant values pinned by test.
+- Duplicate device/interface names in diskio, network, and iface results no longer overwrite the earlier row; collisions fall back to numeric keys.
+- `sg_set_valid_filesystems()` and `Statgrab::setValidFilesystems()` now throw a ValueError on an empty array instead of silently clearing the valid-filesystems list.
 
 ## [2.2.1] - 2026-07-03
 
