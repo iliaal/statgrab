@@ -167,7 +167,11 @@ jobs:
     if: always()
     steps:
       - name: Check required jobs
+        env:
+          LINUX_RESULT: ${{ needs.linux.result }}
+          ASAN_RESULT: ${{ needs.asan-bundled.result }}
+          PIE_RESULT: ${{ needs.pie-smoke.result }}
         run: |
-          test "${{ needs.linux.result }}" = "success"
-          test "${{ needs.asan-bundled.result }}" = "success"
-          test "${{ needs.pie-smoke.result }}" = "success"
+          test "$LINUX_RESULT" = "success"
+          test "$ASAN_RESULT" = "success"
+          test "$PIE_RESULT" = "success"
