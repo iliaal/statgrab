@@ -20,7 +20,7 @@
             {
                 "name": "with-statgrab",
                 "description": "Enable libstatgrab support (use =bundled for the vendored, leak-fixed copy)",
-                "needs-value": false
+                "needs-value": true
             }
         ],
         "support-zts": false,

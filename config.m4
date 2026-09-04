@@ -74,6 +74,14 @@ if test "$PHP_STATGRAB" != "no"; then
     fi
     PHP_ADD_INCLUDE([$STATGRAB_DIR/include])
     PHP_ADD_LIBRARY_WITH_PATH([statgrab], [$STATGRAB_DIR/$PHP_LIBDIR], [STATGRAB_SHARED_LIBADD])
+    AC_CHECK_LIB([statgrab], [sg_init], [],
+      [AC_MSG_ERROR([libstatgrab link check failed in $STATGRAB_DIR.])])
+    AC_MSG_CHECKING([for sg_get_error_details in libstatgrab])
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+      [[#include <statgrab.h>]],
+      [[sg_error_details det; (void) sg_get_error_details(&det);]])],
+      [AC_MSG_RESULT([yes])],
+      [AC_MSG_ERROR([libstatgrab in $STATGRAB_DIR lacks sg_get_error_details; need >= 0.92.])])
   fi
 
   PHP_SUBST([STATGRAB_SHARED_LIBADD])

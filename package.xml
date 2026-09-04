@@ -23,8 +23,9 @@ sg_process_stats, ...) and a Statgrab class with method-based
 access and class constants for sort orders, process states, and
 duplex modes. Both surfaces emit E_WARNING and return false on
 libstatgrab errors; the OO surface throws on argument-count
-violations. sg_get_error_details() returns the underlying string
-and numeric code from libstatgrab.
+violations. sg_error_details() returns array{code,errno,message,arg}
+from libstatgrab (or false when no error is pending); the OO surface
+exposes the same shape via Statgrab::errorDetails().
 
 The repo also ships a vendored libstatgrab 0.92.1 with one local
 patch fixing an sg_destroy_globals off-by-one that leaks the
@@ -41,10 +42,10 @@ Requires libstatgrab >= 0.92 and PHP >= 8.0 (NTS).
   <email>ilia@ilia.ws</email>
   <active>yes</active>
  </lead>
- <date>2026-04-28</date>
+ <date>2026-07-03</date>
  <version>
-  <release>2.2.0</release>
-  <api>2.2.0</api>
+  <release>2.2.1</release>
+  <api>2.2.1</api>
  </version>
  <stability>
   <release>stable</release>
@@ -108,6 +109,7 @@ See CHANGELOG.md for the full list.
 <file name="026-serialize-denied.phpt" role="test" />
 <file name="027-set-valid-filesystems-nul.phpt" role="test" />
 <file name="028-cpu-percent-sources.phpt" role="test" />
+<file name="029-set-valid-filesystems-empty.phpt" role="test" />
    </dir>
   </dir>
  </contents>
