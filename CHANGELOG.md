@@ -10,7 +10,12 @@ this project adheres to [Semantic Versioning](https://semver.org).
 
 - Stub-declared `Statgrab::ERROR_UNSUPPORTED` was 41 (`SG_ERROR_MACHCALL`); now 44 to match libstatgrab's `sg_error` enum, with all ERROR_* constant values pinned by test.
 - Duplicate device/interface names in diskio, network, and iface results no longer overwrite the earlier row; collisions fall back to numeric keys.
-- `sg_set_valid_filesystems()` and `Statgrab::setValidFilesystems()` now throw a ValueError on an empty array instead of silently clearing the valid-filesystems list.
+- `sg_error_details()` always returned false; it now returns the code/errno/message/arg array when a libstatgrab error is pending.
+- `sg_process_stats()` with a sort mode sorted libstatgrab's shared vector in place; it now sorts a caller-owned copy.
+- `sg_process_stats()` with a negative limit silently returned every process; it now throws a ValueError (0 still means all).
+- Cold `sg_cpu_percent_usage()` diff-source calls returned false with a misleading "no error" warning; they now return the first sample row.
+- `Statgrab::cpu()` reflection showed a bare 0 default; it now shows `Statgrab::CPU_PERCENT_ENTIRE`.
+- PIE installs can now forward `--with-statgrab=bundled` to reach the vendored leak-fixed libstatgrab.
 
 ## [2.2.1] - 2026-07-03
 

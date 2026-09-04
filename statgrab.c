@@ -73,6 +73,12 @@ static void php_sg_cpu_percent(zval *return_value, zend_long source)
 	case sg_last_diff_cpu_percent:
 	case sg_new_diff_cpu_percent:
 		cpu = sg_get_cpu_percents_of((sg_cpu_percent_source)source, &entries);
+		if (cpu != NULL && entries == 0) {
+			/* Cold path: with no diff vector yet lib falls through to the
+			 * plain getter and reports the count of a vector it never
+			 * populated. The return is still the single valid row. */
+			entries = 1;
+		}
 		break;
 	default:
 		php_error_docref(NULL, E_WARNING,
@@ -420,7 +426,8 @@ static void php_sg_process_count(zval *return_value)
 static void php_sg_process_stats_impl(zval *return_value, zend_long sort_order, zend_long num_entries, int sort_given)
 {
 	size_t entries = 0;
-	sg_process_stats *ps = sg_get_process_stats(&entries);
+	/* _r returns an owned copy so sorting never mutates the library vector. */
+	sg_process_stats *ps = sg_get_process_stats_r(&entries);
 
 	if (ps == NULL) {
 		php_sg_emit_error();
@@ -440,6 +447,7 @@ static void php_sg_process_stats_impl(zval *return_value, zend_long sort_order, 
 			case 6: cmp = sg_process_compare_cpu;  break;
 			case 7: cmp = sg_process_compare_time; break;
 			default:
+				sg_free_stats_buf(ps);
 				php_error_docref(NULL, E_WARNING,
 					"'" ZEND_LONG_FMT "' is not a supported sorting mode", sort_order);
 				RETVAL_FALSE;
@@ -448,8 +456,13 @@ static void php_sg_process_stats_impl(zval *return_value, zend_long sort_order, 
 		qsort(ps, entries, sizeof(*ps), cmp);
 	}
 
+	if (num_entries < 0) {
+		sg_free_stats_buf(ps);
+		zend_argument_value_error(2, "must be greater than or equal to 0");
+		RETURN_THROWS();
+	}
 	zend_long limit = num_entries;
-	if (limit < 1 || (zend_ulong)limit > entries) {
+	if (limit == 0 || (zend_ulong)limit > entries) {
 		limit = (zend_long)entries;
 	}
 
@@ -480,6 +493,7 @@ static void php_sg_process_stats_impl(zval *return_value, zend_long sort_order, 
 		PHP_SG_ADD_LONG(&row, "systime",                      ps[i].systime);
 		add_next_index_zval(return_value, &row);
 	}
+	sg_free_stats_buf(ps);
 }
 
 /* ------------------------------------------------------------------- */
@@ -580,6 +594,9 @@ static void php_sg_set_valid_filesystems(zval *return_value, zval *zfs)
 	} ZEND_HASH_FOREACH_END();
 	buf[i] = NULL;
 
+	/* XXX upstream swaps the global valid-filesystems list without locking
+	 * (must be locked in disk_stats.c), so concurrent sg_get_fs_stats can
+	 * race under ZTS -- unfixable at this layer, documented caveat. */
 	sg_error rc = sg_set_valid_filesystems(buf);
 	efree(buf);
 
@@ -604,17 +621,23 @@ static void php_sg_error_details(zval *return_value)
 	sg_error_details det;
 	memset(&det, 0, sizeof det);
 
-	sg_error code = sg_get_error_details(&det);
-	if (code == SG_ERROR_NONE) {
+	/* Transport rc reports the fetch itself; the pending error lives in det.error. */
+	sg_error rc = sg_get_error_details(&det);
+	if (rc != SG_ERROR_NONE) {
+		php_sg_emit_error();
+		RETVAL_FALSE;
+		return;
+	}
+	if (det.error == SG_ERROR_NONE) {
 		RETVAL_FALSE;
 		return;
 	}
 
 	array_init(return_value);
-	PHP_SG_ADD_LONG(return_value, "code",  code);
+	PHP_SG_ADD_LONG(return_value, "code",  det.error);
 	PHP_SG_ADD_LONG(return_value, "errno", det.errno_value);
 	add_assoc_string_ex(return_value, "message", sizeof("message") - 1,
-		(char *)sg_str_error(code));
+		(char *)sg_str_error(det.error));
 	if (det.error_arg) {
 		add_assoc_string_ex(return_value, "arg", sizeof("arg") - 1,
 			(char *)det.error_arg);
@@ -780,7 +803,11 @@ PHP_MINIT_FUNCTION(statgrab)
 		/* Seed initial snapshots so derived stats (CPU percent, *_diff) are
 		 * available on the very first user call. Without this, sg_get_cpu_percents
 		 * returns NULL until a second snapshot has been taken. */
-		(void)sg_snapshot();
+		if (sg_snapshot() != SG_ERROR_NONE) {
+			php_error_docref(NULL, E_NOTICE,
+				"libstatgrab: sg_snapshot failed: %s",
+				sg_str_error(sg_get_error()));
+		}
 
 		/* Best-effort privilege drop. Failure is non-fatal: on Linux the library
 		 * works fine without setuid bits, and a permission error here used to abort
