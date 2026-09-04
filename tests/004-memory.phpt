@@ -15,12 +15,15 @@ foreach (['total', 'free', 'used', 'cache'] as $k) {
     }
 }
 echo $m['total'] > 0                   ? "total > 0\n"           : "FAIL total\n";
-echo ($m['used'] + $m['free']) <= $m['total'] * 2
-                                       ? "used+free sane\n"      : "FAIL used+free\n";
+foreach (['used', 'free', 'cache'] as $k) {
+    echo $m[$k] <= $m['total']         ? "$k <= total\n"         : "FAIL $k > total\n";
+}
 echo "DONE\n";
 ?>
 --EXPECT--
 bool(true)
 total > 0
-used+free sane
+used <= total
+free <= total
+cache <= total
 DONE

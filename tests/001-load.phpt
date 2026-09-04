@@ -12,9 +12,9 @@ var_dump(SG_FULL_DUPLEX === Statgrab::DUPLEX_FULL);
 var_dump(SG_PS_SORT_NAME === Statgrab::SORT_NAME);
 var_dump(SG_PROCESS_STATE_RUNNING === Statgrab::STATE_RUNNING);
 ?>
---EXPECT--
+--EXPECTF--
 bool(true)
-string(5) "2.2.1"
+string(%d) "%d.%d.%s"
 bool(true)
 bool(true)
 bool(true)

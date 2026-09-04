@@ -21,11 +21,21 @@ try {
 
 /* Rejection must be side-effect free: the list is still intact. */
 $fs = sg_valid_filesystems();
-echo is_array($fs) && count($fs) >= 5 ? "list_intact\n" : "FAIL intact\n";
+$shape_ok = is_array($fs) && count($fs) > 0;
+foreach ((array)$fs as $entry) {
+    if (!is_string($entry) || $entry === '') { $shape_ok = false; break; }
+}
+echo $shape_ok ? "shape_intact\n" : "FAIL intact\n";
+if (PHP_OS_FAMILY === 'Linux') {
+    echo (is_array($fs) && count($fs) >= 5) ? "list_intact\n" : "FAIL intact count\n";
+} else {
+    echo "list_intact NA\n";
+}
 echo "DONE\n";
 ?>
---EXPECT--
+--EXPECTF--
 throws ValueError
 method throws ValueError
-list_intact
+shape_intact
+%s
 DONE

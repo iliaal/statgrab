@@ -11,8 +11,8 @@ statgrab
 try {
     serialize(new Statgrab());
     echo "FAIL: serialize allowed\n";
-} catch (\Exception $e) {
-    echo "serialize blocked: " . $e->getMessage() . "\n";
+} catch (\Throwable $e) {
+    echo str_contains($e->getMessage(), 'Statgrab') ? "serialize blocked\n" : "FAIL: {$e->getMessage()}\n";
 }
 
 $blocked = false;
@@ -25,6 +25,6 @@ try {
 }
 echo $blocked ? "unserialize blocked\n" : "FAIL: unserialize allowed\n";
 ?>
---EXPECTF--
-serialize blocked: %s
+--EXPECT--
+serialize blocked
 unserialize blocked

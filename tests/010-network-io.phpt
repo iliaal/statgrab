@@ -4,27 +4,30 @@ sg_network_stats: per-interface I/O counters keyed by ifname
 statgrab
 --FILE--
 <?php
+function fail(string $msg): void { fwrite(STDERR, "FAIL: $msg\n"); exit(1); }
 $n = sg_network_stats();
 if (!is_array($n)) {
-    echo "FAIL: not array\n";
-    exit;
+    fail("sg_network_stats not array");
 }
 if (count($n) === 0) {
     echo "no_ifaces\n";
 } else {
     foreach ($n as $name => $row) {
         if (!is_string($name) || $name === '') {
-            echo "FAIL: bad key '$name'\n";
+            fail("bad key '$name'");
         }
         foreach (['sent', 'received', 'packets_received', 'packets_transmitted',
                   'receive_errors', 'transmit_errors', 'collisions', 'time_frame'] as $k) {
             if (!is_int($row[$k] ?? null)) {
-                echo "FAIL: $name.$k not int\n";
+                fail("$name.$k not int");
             }
         }
     }
-    $d = sg_network_stats_diff();
-    echo is_array($d) ? "diff_array\n" : "FAIL diff\n";
+    echo "ok\n";
+}
+$d = sg_network_stats_diff();
+if (!is_array($d)) {
+    fail("sg_network_stats_diff not array");
 }
 echo "DONE\n";
 ?>
