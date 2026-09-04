@@ -6,6 +6,8 @@ this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [2.2.2] - 2026-09-03
+
 ### Fixed
 
 - Stub-declared `Statgrab::ERROR_UNSUPPORTED` was 41 (`SG_ERROR_MACHCALL`); now 44 to match libstatgrab's `sg_error` enum, with all ERROR_* constant values pinned by test.
@@ -73,7 +75,8 @@ this project adheres to [Semantic Versioning](https://semver.org).
   `.release-config` and CI for safety against system libstatgrab
   shipping the unpatched library.
 
-[Unreleased]: https://github.com/iliaal/statgrab/compare/2.2.1...HEAD
+[Unreleased]: https://github.com/iliaal/statgrab/compare/2.2.2...HEAD
+[2.2.2]: https://github.com/iliaal/statgrab/releases/tag/2.2.2
 [2.2.1]: https://github.com/iliaal/statgrab/releases/tag/2.2.1
 [2.2.0]: https://github.com/iliaal/statgrab/releases/tag/2.2.0
 
