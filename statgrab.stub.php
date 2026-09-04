@@ -1,5 +1,18 @@
 <?php
 
+/*
+  +----------------------------------------------------------------------+
+  | Copyright (c) The PHP Group                                          |
+  +----------------------------------------------------------------------+
+  | This source file is subject to version 3.01 of the PHP license,      |
+  | that is bundled with this package in the file LICENSE, and is        |
+  | available through the world-wide-web at the following url:           |
+  | https://www.php.net/license/3_01.txt                                 |
+  +----------------------------------------------------------------------+
+  | Author: Ilia Alshanetsky <ilia@ilia.ws>                              |
+  +----------------------------------------------------------------------+
+*/
+
 /** @generate-class-entries */
 
 function sg_cpu_percent_usage(int $source = 0): array|false {}
@@ -82,7 +95,7 @@ final class Statgrab
 
     public function __construct() {}
 
-    public function cpu(int $source = self::CPU_PERCENT_ENTIRE): array|false {}
+    public function cpu(int $source = Statgrab::CPU_PERCENT_ENTIRE): array|false {}
     public function cpuStats(): array|false {}
     public function cpuDiff(): array|false {}
     public function disks(bool $diff = false): array|false {}

@@ -54,7 +54,9 @@ ZEND_END_ARG_INFO()
 #define arginfo_class_Statgrab_users                arginfo_sg_user_stats
 #define arginfo_class_Statgrab_interfaces           arginfo_sg_network_iface_stats
 #define arginfo_class_Statgrab_processes            arginfo_sg_process_stats
-#define arginfo_class_Statgrab_cpu                  arginfo_sg_cpu_percent_usage
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_Statgrab_cpu, 0, 0, MAY_BE_ARRAY|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, source, IS_LONG, 0, "Statgrab::CPU_PERCENT_ENTIRE")
+ZEND_END_ARG_INFO()
 #define arginfo_class_Statgrab_validFilesystems     arginfo_sg_valid_filesystems
 #define arginfo_class_Statgrab_setValidFilesystems  arginfo_sg_set_valid_filesystems
 #define arginfo_class_Statgrab_snapshot             arginfo_sg_snapshot
