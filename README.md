@@ -115,7 +115,10 @@ static-link, neither license infects the other.
 The 2006 function names are preserved.
 
 ```php
-sg_cpu_percent_usage(): array|false       // user/kernel/idle/iowait/swap/nice (%)
+sg_cpu_percent_usage(int $source = Statgrab::CPU_PERCENT_ENTIRE): array|false
+//   $source: CPU_PERCENT_ENTIRE (cumulative since boot, default),
+//            CPU_PERCENT_LAST_DIFF (since previous internal snapshot),
+//            CPU_PERCENT_NEW_DIFF (since this call)
 sg_cpu_totals(): array|false              // cumulative jiffies + ctx switches/syscalls/IRQs
 sg_cpu_diff(): array|false                // jiffies since last call
 sg_diskio_stats(): array|false            // [diskname => [read, written, time_frame]]
@@ -130,20 +133,37 @@ sg_network_stats_diff(): array|false
 sg_page_stats(): array|false              // pages_in, pages_out (cumulative)
 sg_page_stats_diff(): array|false
 sg_process_count(): array|false           // total, running, sleeping, stopped, zombie
-sg_process_stats(?int $sort = null, int $limit = 0): array|false  // $limit < 1 or > count returns all entries
+sg_process_stats(?int $sort_order = null, int $num_entries = 0): array|false  // $num_entries < 1 or > count returns all entries
 sg_user_stats(): array|false              // [{login_name, device, pid, login_time, ...}]
 sg_network_iface_stats(): array|false     // [ifname => {speed, duplex, active}]
+// 2.1 additions:
+sg_valid_filesystems(): array|false       // list of fs-type strings libstatgrab treats as "real"
+sg_set_valid_filesystems(array $filesystems): bool  // subsequent sg_fs_stats() only returns these fs_type values
+sg_snapshot(): bool                       // re-seed libstatgrab's internal counters (call before a sliding-window sample)
+sg_error_details(): array|false           // [code, errno, message, arg] for the pending libstatgrab error, or false if none
 ```
+
+CPU results (`sg_cpu_percent_usage()`, `sg_cpu_totals()`, `sg_cpu_diff()`)
+carry a `previous_run` key with the timestamp of the previous sample.
+
+`sg_diskio_stats()` / `sg_diskio_stats_diff()`, `sg_network_stats()` /
+`sg_network_stats_diff()`, and `sg_network_iface_stats()` key rows by
+device/interface name; a duplicate name (multipath/LVM can repeat one)
+falls back to a numeric key instead of overwriting the earlier row.
 
 ### Object-oriented
 
 ```php
 $sg = new Statgrab();
-$sg->cpu();
+$sg->cpu();                                // cpu(int $source = Statgrab::CPU_PERCENT_ENTIRE): array|false
 $sg->host();
 $sg->memory();
-$sg->processes(Statgrab::SORT_CPU, 10);
+$sg->processes(Statgrab::SORT_CPU, 10);    // processes(?int $sort_order = null, int $num_entries = 0): array|false
 $sg->disks(diff: true);
+$sg->validFilesystems();                   // array|false — list of fs-type strings
+$sg->setValidFilesystems(['ext4']);        // bool — subsequent filesystems() only returns these fs_type values
+$sg->snapshot();                           // bool — re-seed libstatgrab's internal counters
+$sg->errorDetails();                       // array|false — [code, errno, message, arg], or false if none pending
 ```
 
 Class constants:
@@ -151,8 +171,10 @@ Class constants:
 - `Statgrab::DUPLEX_FULL | DUPLEX_HALF | DUPLEX_UNKNOWN`
 - `Statgrab::SORT_NAME | PID | UID | GID | SIZE | RES | CPU | TIME`
 - `Statgrab::STATE_RUNNING | SLEEPING | STOPPED | ZOMBIE | UNKNOWN`
-
-The `SG_*` global constants from 2006 are still defined for BC.
+- `Statgrab::CPU_PERCENT_ENTIRE | LAST_DIFF | NEW_DIFF` — `$source` modes for `cpu()` / `sg_cpu_percent_usage()`
+- `Statgrab::HOST_STATE_UNKNOWN | PHYSICAL | VIRTUAL_MACHINE | PARAVIRTUAL_MACHINE | HARDWARE_VIRTUALIZED` — interprets the `host_state` field on `host()` / `sg_general_stats()`
+- `Statgrab::FS_UNKNOWN | REGULAR | SPECIAL | LOOPBACK | REMOTE | LOCAL | ALLTYPES` — bitmask values for the `device_type` field on `filesystems()` / `sg_fs_stats()`
+- `Statgrab::ERROR_NONE | INVALID_ARGUMENT | OPEN | OPENDIR | PERMISSION | UNSUPPORTED` — most useful libstatgrab error codes for programmatic catches
 
 ## Errors
 
@@ -160,6 +182,14 @@ Library-side errors emit `E_WARNING` with the libstatgrab error string
 and code, and the function returns `false`. The OO surface follows the
 same convention. Argument-count violations on no-arg functions throw
 `ArgumentCountError` per modern PHP convention.
+
+`sg_set_valid_filesystems()` and `Statgrab::setValidFilesystems()` throw
+instead of warning on bad input: `ValueError` on an empty array or an
+entry containing NUL bytes, `TypeError` on a non-string entry. A
+libstatgrab runtime failure from the setter (or any other stat call) is
+the usual warning + `false` path — pair the `false` return with
+`sg_error_details()` / `Statgrab::errorDetails()` for the code, message,
+errno, and arg.
 
 ## Notable 2.0 BC breaks
 
