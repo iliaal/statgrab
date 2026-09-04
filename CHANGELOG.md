@@ -15,7 +15,7 @@ this project adheres to [Semantic Versioning](https://semver.org).
 - `sg_process_stats()` with a negative limit silently returned every process; it now throws a ValueError (0 still means all).
 - Cold `sg_cpu_percent_usage()` diff-source calls returned false with a misleading "no error" warning; they now return the first sample row.
 - `Statgrab::cpu()` reflection showed a bare 0 default; it now shows `Statgrab::CPU_PERCENT_ENTIRE`.
-- PIE installs can now forward `--with-statgrab=bundled` to reach the vendored leak-fixed libstatgrab.
+- A failed initial `sg_snapshot()` at startup now emits a notice naming the libstatgrab error instead of failing silently far from the cause.
 
 ## [2.2.1] - 2026-07-03
 

@@ -133,7 +133,7 @@ sg_network_stats_diff(): array|false
 sg_page_stats(): array|false              // pages_in, pages_out (cumulative)
 sg_page_stats_diff(): array|false
 sg_process_count(): array|false           // total, running, sleeping, stopped, zombie
-sg_process_stats(?int $sort_order = null, int $num_entries = 0): array|false  // $num_entries < 1 or > count returns all entries
+sg_process_stats(?int $sort_order = null, int $num_entries = 0): array|false  // $num_entries 0 or > count returns all entries; negative throws ValueError
 sg_user_stats(): array|false              // [{login_name, device, pid, login_time, ...}]
 sg_network_iface_stats(): array|false     // [ifname => {speed, duplex, active}]
 // 2.1 additions:
