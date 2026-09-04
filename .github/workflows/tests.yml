@@ -54,9 +54,11 @@ jobs:
           php /tmp/pie.phar repository:add path .
           php /tmp/pie.phar build iliaal/statgrab:*@dev
 
+  # ASAN_OPTIONS detect_leaks=0 below means leaks gate solely via asan-bundled.
   linux:
     name: PHP ${{ matrix.php }} - Linux NTS
     runs-on: ubuntu-22.04
+    needs: validate
     strategy:
       fail-fast: false
       matrix:
@@ -94,6 +96,7 @@ jobs:
   asan-bundled:
     name: PHP 8.4 - ASAN (bundled libstatgrab)
     runs-on: ubuntu-22.04
+    needs: validate
     env:
       ASAN_OPTIONS: exitcode=139:detect_odr_violation=0:detect_leaks=1:fast_unwind_on_malloc=0
       LSAN_OPTIONS: suppressions=${{ github.workspace }}/.github/lsan.supp:print_suppressions=0
@@ -156,3 +159,15 @@ jobs:
           export TEST_PHP_EXECUTABLE=/tmp/php-asan/bin/php
           export TEST_PHP_ARGS="-d extension=$(pwd)/modules/statgrab.so"
           /tmp/php-asan/bin/php run-tests.php --asan --show-diff -g FAIL,BORK,LEAK,XLEAK tests/
+
+  gate:
+    name: CI gate
+    runs-on: ubuntu-latest
+    needs: [linux, asan-bundled, pie-smoke]
+    if: always()
+    steps:
+      - name: Check required jobs
+        run: |
+          test "${{ needs.linux.result }}" = "success"
+          test "${{ needs.asan-bundled.result }}" = "success"
+          test "${{ needs.pie-smoke.result }}" = "success"
