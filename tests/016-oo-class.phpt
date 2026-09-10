@@ -6,7 +6,6 @@ statgrab
 <?php
 $sg = new Statgrab();
 
-/* Each accessor returns an array matching its procedural sibling. */
 $pairs = [
     'cpu'          => 'sg_cpu_percent_usage',
     'cpuStats'     => 'sg_cpu_totals',
@@ -33,7 +32,6 @@ foreach ($pairs as $method => $func) {
 }
 echo "pairs_ok\n";
 
-/* diff variants mirror the procedural *_diff functions key-for-key */
 $diffs = [
     'disks'   => 'sg_diskio_stats_diff',
     'network' => 'sg_network_stats_diff',
@@ -53,7 +51,6 @@ foreach ($diffs as $m => $func) {
     echo "{$m}_diff_ok\n";
 }
 
-/* OO validFilesystems round-trip with restore. */
 $orig = sg_valid_filesystems();
 if (!is_array($orig) || count($orig) === 0) {
     echo "FAIL: validFilesystems default not array\n";
@@ -70,7 +67,6 @@ if (!is_array($orig) || count($orig) === 0) {
     echo sg_valid_filesystems() === $orig ? "fs_restored\n" : "FAIL fs restore\n";
 }
 
-/* processes() */
 $top = $sg->processes(Statgrab::SORT_PID, 5);
 echo (is_array($top) && count($top) === 5) ? "top_pids_5\n" : "FAIL processes\n";
 

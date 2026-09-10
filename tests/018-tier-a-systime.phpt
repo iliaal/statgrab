@@ -15,7 +15,6 @@ echo is_int($swap['systime']) ? "swap.systime int\n" : "FAIL swap\n";
 $load = sg_load_stats();
 echo is_int($load['systime']) ? "load.systime int\n" : "FAIL load\n";
 
-/* All four samples were taken within the same second of wall clock. */
 foreach ([$mem, $swap, $load] as $name => $sample) {
     if (abs($sample['systime'] - $now) > 5) {
         echo "FAIL: systime drift > 5s\n";

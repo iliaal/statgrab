@@ -4,8 +4,7 @@ sg_process_stats: sort order + limit
 statgrab
 --FILE--
 <?php
-/* All 8 sort modes return arrays sorted by their key (direction-agnostic:
- * ascending or descending both prove the comparator ran). */
+/* Comparator directions vary; accept either monotonic order. */
 $modes = [
     SG_PS_SORT_NAME => 'process_name',
     SG_PS_SORT_PID  => 'pid',
@@ -34,8 +33,7 @@ foreach ($modes as $mode => $key) {
     echo ($asc || $desc) ? "sorted_$mode\n" : "FAIL sort $mode not sorted\n";
 }
 
-/* limit 0 behaves like no limit. The table is live so two back-to-back
- * reads may straddle a fork/exit; allow a small churn tolerance. */
+/* Allow fork/exit churn between live process counts. */
 $full = sg_process_stats();
 $zero = sg_process_stats(SG_PS_SORT_PID, 0);
 $fc = is_array($full) ? count($full) : -1;
@@ -46,7 +44,6 @@ echo ($fc >= 0 && abs($zc - $fc) <= 2) ? "limit_0_full\n" : "FAIL limit_0 got $z
 $nosort = sg_process_stats(null);
 echo is_array($nosort) ? "null_ok\n" : "FAIL null\n";
 
-/* Invalid sort value emits warning + returns false */
 $r = @sg_process_stats(99);
 var_dump($r);
 

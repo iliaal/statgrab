@@ -22,8 +22,7 @@ foreach (['p (cumulative)' => $p, 'd (diff)' => $d] as $label => $row) {
     }
 }
 
-/* Cumulative >= diff for pagein on a steady-state system. The 2006 release
- * swapped the two; this asserts the fix. */
+/* Assumes steady-state paging between the two samples. */
 echo $p['pages_in'] >= $d['pages_in'] ? "cumulative_ge_diff\n" : "FAIL cumulative<diff\n";
 echo "DONE\n";
 ?>

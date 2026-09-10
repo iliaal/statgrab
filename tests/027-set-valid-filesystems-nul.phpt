@@ -11,7 +11,6 @@ try {
     echo "throws ValueError\n";
 }
 
-/* OO mirror */
 try {
     (new Statgrab())->setValidFilesystems(["a\0b"]);
     echo "FAIL: no method exception\n";

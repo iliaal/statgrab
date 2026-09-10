@@ -45,21 +45,15 @@ static void php_sg_emit_error(void)
 	add_assoc_string_ex((arr), (key), sizeof(key) - 1, (char *)(_v ? _v : "")); \
 } while (0)
 
-/* ------------------------------------------------------------------- */
-/* CPU                                                                  */
-/* ------------------------------------------------------------------- */
-
 static void php_sg_cpu_percent(zval *return_value, zend_long source)
 {
 	size_t entries = 0;
 	sg_cpu_percents *cpu = NULL;
-	int cpu_owned = 0; /* whether we must sg_free_stats_buf(cpu) on the way out */
+	int cpu_owned = 0;
 
 	switch (source) {
 	case sg_entire_cpu_percent: {
-		/* Use the reentrant variant to dodge first-call NULL: sample stats
-		 * explicitly and convert via _r. The _r return owns its memory --
-		 * caller must free with sg_free_stats_buf. */
+		/* Explicit sampling avoids first-call NULL; _r returns owned memory. */
 		sg_cpu_stats *stats = sg_get_cpu_stats(&entries);
 		if (stats == NULL || entries == 0) {
 			php_sg_emit_error();
@@ -74,9 +68,8 @@ static void php_sg_cpu_percent(zval *return_value, zend_long source)
 	case sg_new_diff_cpu_percent:
 		cpu = sg_get_cpu_percents_of((sg_cpu_percent_source)source, &entries);
 		if (cpu != NULL && entries == 0) {
-			/* Cold path: with no diff vector yet lib falls through to the
-			 * plain getter and reports the count of a vector it never
-			 * populated. The return is still the single valid row. */
+			/* Before the diff vector exists, libstatgrab returns one row
+			 * but reports the empty diff vector's count. */
 			entries = 1;
 		}
 		break;
@@ -140,13 +133,7 @@ static void php_sg_cpu_stats(zval *return_value, int diff)
 	PHP_SG_ADD_LONG(return_value, "previous_run",                  cpu[0].systime);
 }
 
-/* ------------------------------------------------------------------- */
-/* Disk I/O                                                             */
-/* ------------------------------------------------------------------- */
-
-/* Key rows by device/interface name, but never let a duplicate name
- * silently overwrite an earlier row (multipath/LVM can repeat names):
- * fall back to numeric indexing instead. */
+/* Multipath/LVM can repeat names; preserve duplicate rows with numeric keys. */
 static void php_sg_add_named_row(zval *return_value, const char *name, zval *row)
 {
 	if (name && !zend_hash_str_exists(Z_ARRVAL_P(return_value),
@@ -181,10 +168,6 @@ static void php_sg_diskio(zval *return_value, int diff)
 		php_sg_add_named_row(return_value, dst[i].disk_name, &row);
 	}
 }
-
-/* ------------------------------------------------------------------- */
-/* Filesystems                                                          */
-/* ------------------------------------------------------------------- */
 
 static void php_sg_fs(zval *return_value)
 {
@@ -225,10 +208,6 @@ static void php_sg_fs(zval *return_value)
 	}
 }
 
-/* ------------------------------------------------------------------- */
-/* Host                                                                 */
-/* ------------------------------------------------------------------- */
-
 static void php_sg_host(zval *return_value)
 {
 	size_t entries = 0;
@@ -254,10 +233,6 @@ static void php_sg_host(zval *return_value)
 	PHP_SG_ADD_LONG(return_value, "systime",    h[0].systime);
 }
 
-/* ------------------------------------------------------------------- */
-/* Load average                                                         */
-/* ------------------------------------------------------------------- */
-
 static void php_sg_load(zval *return_value)
 {
 	size_t entries = 0;
@@ -275,10 +250,6 @@ static void php_sg_load(zval *return_value)
 	PHP_SG_ADD_DOUBLE(return_value, "min15",   l[0].min15);
 	PHP_SG_ADD_LONG  (return_value, "systime", l[0].systime);
 }
-
-/* ------------------------------------------------------------------- */
-/* Memory / swap                                                        */
-/* ------------------------------------------------------------------- */
 
 static void php_sg_mem(zval *return_value)
 {
@@ -316,10 +287,6 @@ static void php_sg_swap(zval *return_value)
 	PHP_SG_ADD_LONG(return_value, "used",    s[0].used);
 	PHP_SG_ADD_LONG(return_value, "systime", s[0].systime);
 }
-
-/* ------------------------------------------------------------------- */
-/* Network                                                              */
-/* ------------------------------------------------------------------- */
 
 static void php_sg_network(zval *return_value, int diff)
 {
@@ -376,10 +343,6 @@ static void php_sg_iface(zval *return_value)
 	}
 }
 
-/* ------------------------------------------------------------------- */
-/* Pages                                                                */
-/* ------------------------------------------------------------------- */
-
 static void php_sg_pages(zval *return_value, int diff)
 {
 	size_t entries = 0;
@@ -398,10 +361,6 @@ static void php_sg_pages(zval *return_value, int diff)
 	PHP_SG_ADD_LONG(return_value, "pages_out",  ps[0].pages_pageout);
 	PHP_SG_ADD_LONG(return_value, "time_frame", ps[0].systime);
 }
-
-/* ------------------------------------------------------------------- */
-/* Processes                                                            */
-/* ------------------------------------------------------------------- */
 
 static void php_sg_process_count(zval *return_value)
 {
@@ -496,10 +455,6 @@ static void php_sg_process_stats_impl(zval *return_value, zend_long sort_order, 
 	sg_free_stats_buf(ps);
 }
 
-/* ------------------------------------------------------------------- */
-/* Users                                                                */
-/* ------------------------------------------------------------------- */
-
 static void php_sg_users(zval *return_value)
 {
 	size_t entries = 0;
@@ -522,7 +477,7 @@ static void php_sg_users(zval *return_value)
 		PHP_SG_ADD_LONG(&row, "login_time", us[i].login_time);
 		PHP_SG_ADD_LONG(&row, "systime",    us[i].systime);
 
-		/* record_id may contain non-printable bytes; emit as a length-aware string */
+		/* record_id is binary. */
 		if (us[i].record_id && us[i].record_id_size > 0) {
 			add_assoc_stringl_ex(&row, "record_id", sizeof("record_id") - 1,
 				us[i].record_id, us[i].record_id_size);
@@ -533,10 +488,6 @@ static void php_sg_users(zval *return_value)
 		add_next_index_zval(return_value, &row);
 	}
 }
-
-/* ------------------------------------------------------------------- */
-/* 2.1: valid filesystems / snapshot / error details                    */
-/* ------------------------------------------------------------------- */
 
 static void php_sg_valid_filesystems(zval *return_value)
 {
@@ -569,8 +520,7 @@ static void php_sg_set_valid_filesystems(zval *return_value, zval *zfs)
 		RETURN_THROWS();
 	}
 
-	/* libstatgrab wants a NULL-terminated const char *[]. It strdup's the
-	 * strings, so freeing our pointer array immediately is safe. */
+	/* libstatgrab copies the strings from this NULL-terminated array. */
 	const char **buf = (const char **)safe_emalloc(sizeof(const char *), n + 1, 0);
 	size_t i = 0;
 
@@ -594,9 +544,8 @@ static void php_sg_set_valid_filesystems(zval *return_value, zval *zfs)
 	} ZEND_HASH_FOREACH_END();
 	buf[i] = NULL;
 
-	/* XXX upstream swaps the global valid-filesystems list without locking
-	 * (must be locked in disk_stats.c), so concurrent sg_get_fs_stats can
-	 * race under ZTS -- unfixable at this layer, documented caveat. */
+	/* Upstream must lock disk_stats.c: this global swap races with
+	 * sg_get_fs_stats under ZTS and cannot be fixed at this layer. */
 	sg_error rc = sg_set_valid_filesystems(buf);
 	efree(buf);
 
@@ -621,7 +570,7 @@ static void php_sg_error_details(zval *return_value)
 	sg_error_details det;
 	memset(&det, 0, sizeof det);
 
-	/* Transport rc reports the fetch itself; the pending error lives in det.error. */
+	/* rc describes the fetch; det.error holds the pending error. */
 	sg_error rc = sg_get_error_details(&det);
 	if (rc != SG_ERROR_NONE) {
 		php_sg_emit_error();
@@ -645,10 +594,6 @@ static void php_sg_error_details(zval *return_value)
 		add_assoc_null_ex(return_value, "arg", sizeof("arg") - 1);
 	}
 }
-
-/* ------------------------------------------------------------------- */
-/* Procedural function dispatchers                                      */
-/* ------------------------------------------------------------------- */
 
 #define PHP_SG_PROC_NOARGS(name, body)                          \
 	PHP_FUNCTION(name)                                          \
@@ -709,10 +654,6 @@ PHP_FUNCTION(sg_process_stats)
 
 	php_sg_process_stats_impl(return_value, sort_order, num_entries, sort_is_null ? 0 : 1);
 }
-
-/* ------------------------------------------------------------------- */
-/* OO methods                                                           */
-/* ------------------------------------------------------------------- */
 
 PHP_METHOD(Statgrab, __construct)
 {
@@ -788,10 +729,6 @@ PHP_METHOD(Statgrab, processes)
 	php_sg_process_stats_impl(return_value, sort_order, num_entries, sort_is_null ? 0 : 1);
 }
 
-/* ------------------------------------------------------------------- */
-/* Module                                                               */
-/* ------------------------------------------------------------------- */
-
 #define REGISTER_SG_BC_CONSTANT(c) \
 	REGISTER_LONG_CONSTANT(#c, c, CONST_CS | CONST_PERSISTENT)
 
@@ -800,37 +737,29 @@ PHP_MINIT_FUNCTION(statgrab)
 	if (sg_init(1) == SG_ERROR_NONE) {
 		sg_initialized = 1;
 
-		/* Seed initial snapshots so derived stats (CPU percent, *_diff) are
-		 * available on the very first user call. Without this, sg_get_cpu_percents
-		 * returns NULL until a second snapshot has been taken. */
+		/* Seed CPU percent and *_diff counters for the first user call. */
 		if (sg_snapshot() != SG_ERROR_NONE) {
 			php_error_docref(NULL, E_NOTICE,
 				"libstatgrab: sg_snapshot failed: %s",
 				sg_str_error(sg_get_error()));
 		}
 
-		/* Best-effort privilege drop. Failure is non-fatal: on Linux the library
-		 * works fine without setuid bits, and a permission error here used to abort
-		 * the whole process via E_ERROR -- bug in the 2006 release. */
+		/* Non-fatal: Linux stats remain usable without setuid privileges. */
 		if (sg_drop_privileges() != SG_ERROR_NONE) {
 			php_error_docref(NULL, E_NOTICE,
 				"libstatgrab: sg_drop_privileges failed: %s",
 				sg_str_error(sg_get_error()));
 		}
 	} else {
-		/* Init failed, but keep registering the class and constants below: the
-		 * procedural functions are already live (module function table), so
-		 * bailing here would leave a lopsided surface -- functions present, class
-		 * and constants gone. Stat calls degrade to a warning + false either way. */
+		/* Register the class and constants even on failure: procedural functions
+		 * are already exposed, and stat calls return false with a warning. */
 		php_error_docref(NULL, E_WARNING,
 			"libstatgrab init failed: %s", sg_str_error(sg_get_error()));
 	}
 
 	zend_class_entry *statgrab_ce = register_class_Statgrab();
 #ifdef ZEND_ACC_NOT_SERIALIZABLE
-	/* PHP 8.1+: deny serialization. On 8.0 the flag doesn't exist and the
-	 * deny helpers were removed before release; the class is a stateless
-	 * method bag, so a round-tripped instance is harmless. */
+	/* PHP 8.0 lacks this flag; serializing a stateless instance is harmless. */
 	statgrab_ce->ce_flags |= ZEND_ACC_NOT_SERIALIZABLE;
 #endif
 

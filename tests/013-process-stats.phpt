@@ -28,10 +28,7 @@ if (!is_float($row['cpu_percent'] ?? null)) {
     echo "FAIL: cpu_percent not float\n";
 }
 
-/* 2006 bug: gid mirrored uid, egid mirrored euid. Cross-check our own
- * process against the kernel's view via /proc/self/status (Linux, no
- * posix ext needed): statgrab must report the real uid/gid/euid/egid,
- * not uid twice. Off Linux (no /proc) the shape checks above still stand. */
+/* /proc provides independent UID/GID values without requiring ext-posix. */
 if (is_readable('/proc/self/status')) {
     $status = file_get_contents('/proc/self/status');
     if (preg_match('/^Uid:\s+(\d+)\s+(\d+)/m', $status, $u) &&

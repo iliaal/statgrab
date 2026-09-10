@@ -10,7 +10,7 @@ if (!is_array($fs)) {
     exit;
 }
 if (count($fs) === 0) {
-    /* no mounted filesystems to inspect (unusual, but not a failure) */
+    /* An empty mount list is valid. */
     echo "DONE\n";
     exit;
 }

@@ -11,7 +11,6 @@ try {
     echo "throws TypeError\n";
 }
 
-/* OO mirror */
 try {
     (new Statgrab())->setValidFilesystems(['ext4', null]);
     echo "FAIL: no method exception\n";

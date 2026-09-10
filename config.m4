@@ -1,5 +1,3 @@
-dnl config.m4 for extension statgrab
-
 PHP_ARG_WITH([statgrab], [for libstatgrab support],
 [AS_HELP_STRING([[--with-statgrab[=DIR|=bundled]]],
   [Include libstatgrab >= 0.92 support. =bundled uses the patched copy
@@ -9,7 +7,6 @@ PHP_ARG_WITH([statgrab], [for libstatgrab support],
 if test "$PHP_STATGRAB" != "no"; then
   STATGRAB_FOUND=no
 
-  dnl --- bundled: vendored + patched libstatgrab built under vendor/libstatgrab/ ---
   if test "$PHP_STATGRAB" = "bundled"; then
     AC_MSG_CHECKING([for bundled libstatgrab])
     BUNDLED_INC="$abs_srcdir/vendor/libstatgrab/src/libstatgrab"
@@ -30,7 +27,6 @@ if test "$PHP_STATGRAB" != "no"; then
     STATGRAB_FOUND=yes
   fi
 
-  dnl --- pkg-config detection ---
   if test "$STATGRAB_FOUND" = "no"; then
     AC_PATH_PROG([PKG_CONFIG], [pkg-config], [no])
     if test "x$PKG_CONFIG" != "xno"; then
@@ -49,7 +45,6 @@ if test "$PHP_STATGRAB" != "no"; then
     fi
   fi
 
-  dnl --- explicit-path / default-path probe ---
   if test "$STATGRAB_FOUND" = "no"; then
     if test "$PHP_STATGRAB" = "yes" || test -z "$PHP_STATGRAB"; then
       SEARCH_PATH="/usr/local /usr"

@@ -4,12 +4,10 @@
 statgrab
 --FILE--
 <?php
-/* CPU_PERCENT_* */
 var_dump(Statgrab::CPU_PERCENT_ENTIRE === 0);
 var_dump(Statgrab::CPU_PERCENT_LAST_DIFF === 1);
 var_dump(Statgrab::CPU_PERCENT_NEW_DIFF === 2);
 
-/* HOST_STATE_*: host_state field on sg_general_stats() must be one of these */
 $valid_states = [
     Statgrab::HOST_STATE_UNKNOWN,
     Statgrab::HOST_STATE_PHYSICAL,
@@ -20,11 +18,9 @@ $valid_states = [
 $h = sg_general_stats();
 var_dump(in_array($h['host_state'], $valid_states, true));
 
-/* FS_* bitmask: LOCAL is REGULAR | SPECIAL, ALLTYPES is the OR of four. */
 var_dump(Statgrab::FS_LOCAL    === (Statgrab::FS_REGULAR | Statgrab::FS_SPECIAL));
 var_dump(Statgrab::FS_ALLTYPES === (Statgrab::FS_REGULAR | Statgrab::FS_SPECIAL | Statgrab::FS_LOOPBACK | Statgrab::FS_REMOTE));
 
-/* device_type values from sg_fs_stats() must be subsets of FS_ALLTYPES */
 $fs = sg_fs_stats();
 $bad = false;
 foreach ($fs as $row) {
@@ -35,8 +31,7 @@ foreach ($fs as $row) {
 }
 var_dump($bad === false);
 
-/* ERROR_* exact values pinned against libstatgrab's sg_error enum
- * (0.92.x): catches stub transcription drift. */
+/* Match libstatgrab 0.92.x's sg_error enum to catch stub transcription drift. */
 var_dump(Statgrab::ERROR_NONE === 0);
 var_dump(Statgrab::ERROR_INVALID_ARGUMENT === 1);
 var_dump(Statgrab::ERROR_OPEN === 21);
