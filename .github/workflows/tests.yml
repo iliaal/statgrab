@@ -93,6 +93,46 @@ jobs:
           export TEST_PHP_ARGS="-d extension=$(pwd)/modules/statgrab.so"
           php run-tests.php --show-diff -g FAIL,BORK,LEAK,XLEAK tests/
 
+  linux-php86:
+    name: PHP 8.6 - Linux NTS (PHP-8.6 branch)
+    runs-on: ubuntu-22.04
+    needs: validate
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install build deps + libstatgrab
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y re2c bison autoconf automake libtool \
+                                  pkg-config libxml2-dev libsqlite3-dev libstatgrab-dev
+
+      - name: Build PHP 8.6 from the PHP-8.6 branch
+        run: |
+          git clone --depth=1 --branch=PHP-8.6 https://github.com/php/php-src.git /tmp/php-src
+          cd /tmp/php-src
+          ./buildconf --force
+          ./configure --disable-zts --disable-all --enable-cli \
+                      --disable-cgi --disable-phpdbg --prefix=/tmp/php-86
+          make -j$(nproc)
+          make install
+
+      - name: Build extension
+        run: |
+          export PATH="/tmp/php-86/bin:$PATH"
+          phpize
+          ./configure --with-statgrab --with-php-config=/tmp/php-86/bin/php-config
+          make -j$(nproc)
+
+      - name: Run test suite
+        env:
+          NO_INTERACTION: 1
+        run: |
+          export TEST_PHP_EXECUTABLE=/tmp/php-86/bin/php
+          export TEST_PHP_ARGS="-d extension=$(pwd)/modules/statgrab.so"
+          /tmp/php-86/bin/php run-tests.php --show-diff -g FAIL,BORK,LEAK,XLEAK tests/
+
   asan-bundled:
     name: PHP 8.4 - ASAN (bundled libstatgrab)
     runs-on: ubuntu-22.04
@@ -163,15 +203,17 @@ jobs:
   gate:
     name: CI gate
     runs-on: ubuntu-latest
-    needs: [linux, asan-bundled, pie-smoke]
+    needs: [linux, linux-php86, asan-bundled, pie-smoke]
     if: always()
     steps:
       - name: Check required jobs
         env:
           LINUX_RESULT: ${{ needs.linux.result }}
+          LINUX_PHP86_RESULT: ${{ needs.linux-php86.result }}
           ASAN_RESULT: ${{ needs.asan-bundled.result }}
           PIE_RESULT: ${{ needs.pie-smoke.result }}
         run: |
           test "$LINUX_RESULT" = "success"
+          test "$LINUX_PHP86_RESULT" = "success"
           test "$ASAN_RESULT" = "success"
           test "$PIE_RESULT" = "success"
