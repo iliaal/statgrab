@@ -53,17 +53,22 @@ Requires libstatgrab >= 0.92 and PHP >= 8.0 (NTS).
  </stability>
  <license uri="http://www.php.net/license">PHP License 3.01</license>
  <notes>
-PHP 8.0 build fix, boundary hardening, and init-failure fixes.
+Correctness fixes for error constants, result keys, and process stats.
 
-- Build on PHP 8.0: ZEND_ACC_NOT_SERIALIZABLE is now gated to 8.1+.
-- Free the CPU-percent result buffer on the zero-entries early return.
-- Bundled-build instructions pass --with-pic so the static libstatgrab
-  links on x86_64.
-- Register the Statgrab class and SG_* constants even when sg_init()
-  fails, instead of leaving a lopsided surface.
-- Security hardening: reject embedded NUL bytes in
-  setValidFilesystems(), use overflow-safe allocation for the
-  filesystem array on 32-bit, mark Statgrab non-serializable.
+- Statgrab::ERROR_UNSUPPORTED is 44, matching libstatgrab's sg_error
+  enum (was 41, SG_ERROR_MACHCALL).
+- Duplicate device or interface names in diskio, network, and iface
+  results no longer overwrite earlier rows; collisions use numeric keys.
+- sg_error_details() returns the code/errno/message/arg array when a
+  libstatgrab error is pending (it always returned false).
+- sg_process_stats() sorts a caller-owned copy instead of libstatgrab's
+  shared vector, and a negative limit throws ValueError (0 means all).
+- Cold sg_cpu_percent_usage() diff-source calls return the first sample
+  row instead of false with a misleading warning.
+- Statgrab::cpu() reflection shows Statgrab::CPU_PERCENT_ENTIRE as the
+  default.
+- A failed initial sg_snapshot() at startup emits a notice naming the
+  libstatgrab error.
 
 See CHANGELOG.md for the full list.
  </notes>
