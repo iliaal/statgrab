@@ -1,6 +1,5 @@
 # /release-ext config for statgrab
-# This file IS committed; it carries the structural metadata that travels
-# with the repo across forks/clones.
+# Committed so the release metadata travels with forks and clones.
 
 extension: statgrab
 version_macro: PHP_STATGRAB_VERSION

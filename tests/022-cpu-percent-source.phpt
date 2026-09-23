@@ -4,7 +4,7 @@
 statgrab
 --FILE--
 <?php
-/* CPU_PERCENT_ENTIRE (default) — cumulative since boot, always available. */
+/* CPU_PERCENT_ENTIRE (default): cumulative since boot, always available. */
 $entire = sg_cpu_percent_usage();
 echo is_array($entire) ? "default_ok\n" : "FAIL default\n";
 

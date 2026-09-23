@@ -15,17 +15,17 @@ modernization for the PHP 8.0+ era against libstatgrab 0.92+.
 
 Supports PHP 8.0 through 8.5 on glibc Linux, musl, macOS, and \*BSD.
 
-## The Problem
+## ⚖️ Why native
 
-Reading system stats from PHP usually means one of three bad options:
+Without an extension, reading system stats from PHP means one of these:
 
-- Shell out to `top`, `vmstat`, `df`, `ps` and parse the output. Fragile on every OS update, and `fork`/`exec` overhead adds up if you poll on a schedule.
-- Read `/proc` by hand. Linux-only. Forces hand-rolled regex for every statistic, and the format drifts between kernel releases.
-- Pull in a heavy monitoring framework. Overkill if all you need is a CPU number for a health endpoint.
+- Shell out to `top`, `vmstat`, `df`, or `ps` and parse the output. Each call forks a process, which adds up if you poll every few seconds, and the output format drifts between OS releases.
+- Parse `/proc` by hand. That's Linux-only, and each file (`/proc/meminfo`, `/proc/loadavg`, `/proc/diskstats`, `/proc/net/dev`) has its own format and edge cases.
+- Query a stats daemon or monitoring framework. That adds a network hop and a daemon to deploy, which is overkill if all you need is a CPU number for a health endpoint.
 
-libstatgrab is the right primitive: cross-platform, well-tested, in the package manager of every modern Unix. But the 2006 PECL binding has not shipped a PHP 8 build, and its 2006 BC quirks (stringified counters, swapped page-stat keys, a flat `name_list` for users) made the old extension awkward even when you could compile it.
+statgrab calls libstatgrab in-process. libstatgrab handles the per-OS path (Linux `/proc`, FreeBSD `kvm`, macOS `host_*` APIs) and is packaged for Debian/Ubuntu, Homebrew, and FreeBSD. The 2006 PECL binding never shipped a PHP 8 build, and its quirks (stringified counters, swapped page-stat keys, a flat `name_list` for users) made it awkward even when you could compile it.
 
-## ✨ Key Features
+## ✨ Key features
 
 | Feature | Notes |
 |---|---|
@@ -34,26 +34,15 @@ libstatgrab is the right primitive: cross-platform, well-tested, in the package 
 | Bundled libstatgrab option | Vendored 0.92.1 with a leak-fix patch; resulting `.so` has no runtime dependency on `libstatgrab.so` |
 | Modern types | Counters returned as 64-bit `int`, not stringified numbers |
 | Modern PHP errors | `E_WARNING` on library failure, `ArgumentCountError` for arg-count violations |
-| BC-preserved 2006 names | Drop-in for callers of the original PECL extension, with the 2.0 BC notes documented below |
+| BC-preserved 2006 names | Drop-in for callers of the original PECL extension, except the 2.0 BC breaks listed below |
 
-## ⚖️ Why native
-
-The case for a native extension is the failure modes of the alternatives:
-
-- `exec("top ...")` and friends fork a process per call. The overhead is real if you poll every few seconds, and the output format drifts between OS releases.
-- Hand-parsing `/proc` ties you to Linux and to whatever the kernel decided to print this year. Each file (`/proc/meminfo`, `/proc/loadavg`, `/proc/diskstats`, `/proc/net/dev`) has its own format and edge cases.
-- Calling out to a stats daemon adds a network hop and a daemon to deploy.
-
-statgrab calls libstatgrab in-process. libstatgrab handles the per-OS path (Linux `/proc`, FreeBSD `kvm`, macOS `host_*` APIs) and exposes a single typed surface. The extension wraps that surface with no allocation per call beyond the result array.
-
-## 🚀 Quick Start
+## 🚀 Quick start
 
 ### PIE (recommended on PHP 8.x)
 
 [PIE](https://github.com/php/pie) is the PHP Foundation's PECL successor.
-It installs from Packagist, builds against the active `php-config`, and
-produces a loadable `.so`. Make sure libstatgrab is installed first
-(see the From-source section below for the system package names), then:
+It installs from Packagist and builds against the active `php-config`.
+Install libstatgrab first (package names are under From source), then:
 
 ```sh
 pie install iliaal/statgrab
@@ -63,7 +52,7 @@ Then add `extension=statgrab` to your `php.ini`.
 
 ### PECL
 
-The package remains in the PECL channel for legacy installers:
+statgrab is also on PECL:
 
 ```sh
 pecl install statgrab
@@ -84,8 +73,8 @@ sudo make install
 
 Then add `extension=statgrab` to your `php.ini`.
 
-`config.m4` resolves libstatgrab through `pkg-config` first; if that
-fails it falls back to a path probe (`/usr` and `/usr/local`). Pass
+`config.m4` finds libstatgrab through `pkg-config` first, then falls back
+to a path probe (`/usr` and `/usr/local`). Pass
 `--with-statgrab=<prefix>` to point at a custom install.
 
 ### Bundled libstatgrab (statically linked, leak-fixed)
@@ -160,10 +149,10 @@ $sg->host();
 $sg->memory();
 $sg->processes(Statgrab::SORT_CPU, 10);    // processes(?int $sort_order = null, int $num_entries = 0): array|false
 $sg->disks(diff: true);
-$sg->validFilesystems();                   // array|false — list of fs-type strings
-$sg->setValidFilesystems(['ext4']);        // bool — subsequent filesystems() only returns these fs_type values
-$sg->snapshot();                           // bool — re-seed libstatgrab's internal counters
-$sg->errorDetails();                       // array|false — [code, errno, message, arg], or false if none pending
+$sg->validFilesystems();                   // array|false: list of fs-type strings
+$sg->setValidFilesystems(['ext4']);        // bool: subsequent filesystems() only returns these fs_type values
+$sg->snapshot();                           // bool: re-seed libstatgrab's internal counters
+$sg->errorDetails();                       // array|false: [code, errno, message, arg], or false if none pending
 ```
 
 Class constants:
@@ -171,24 +160,24 @@ Class constants:
 - `Statgrab::DUPLEX_FULL | DUPLEX_HALF | DUPLEX_UNKNOWN`
 - `Statgrab::SORT_NAME | PID | UID | GID | SIZE | RES | CPU | TIME`
 - `Statgrab::STATE_RUNNING | SLEEPING | STOPPED | ZOMBIE | UNKNOWN`
-- `Statgrab::CPU_PERCENT_ENTIRE | LAST_DIFF | NEW_DIFF` — `$source` modes for `cpu()` / `sg_cpu_percent_usage()`
-- `Statgrab::HOST_STATE_UNKNOWN | PHYSICAL | VIRTUAL_MACHINE | PARAVIRTUAL_MACHINE | HARDWARE_VIRTUALIZED` — interprets the `host_state` field on `host()` / `sg_general_stats()`
-- `Statgrab::FS_UNKNOWN | REGULAR | SPECIAL | LOOPBACK | REMOTE | LOCAL | ALLTYPES` — bitmask values for the `device_type` field on `filesystems()` / `sg_fs_stats()`
-- `Statgrab::ERROR_NONE | INVALID_ARGUMENT | OPEN | OPENDIR | PERMISSION | UNSUPPORTED` — most useful libstatgrab error codes for programmatic catches
+- `Statgrab::CPU_PERCENT_ENTIRE | LAST_DIFF | NEW_DIFF`: `$source` modes for `cpu()` / `sg_cpu_percent_usage()`
+- `Statgrab::HOST_STATE_UNKNOWN | PHYSICAL | VIRTUAL_MACHINE | PARAVIRTUAL_MACHINE | HARDWARE_VIRTUALIZED`: interprets the `host_state` field on `host()` / `sg_general_stats()`
+- `Statgrab::FS_UNKNOWN | REGULAR | SPECIAL | LOOPBACK | REMOTE | LOCAL | ALLTYPES`: bitmask values for the `device_type` field on `filesystems()` / `sg_fs_stats()`
+- `Statgrab::ERROR_NONE | INVALID_ARGUMENT | OPEN | OPENDIR | PERMISSION | UNSUPPORTED`: common libstatgrab error codes to match on
 
 ## Errors
 
 Library-side errors emit `E_WARNING` with the libstatgrab error string
 and code, and the function returns `false`. The OO surface follows the
 same convention. Argument-count violations on no-arg functions throw
-`ArgumentCountError` per modern PHP convention.
+`ArgumentCountError`.
 
 `sg_set_valid_filesystems()` and `Statgrab::setValidFilesystems()` throw
 instead of warning on bad input: `ValueError` on an empty array or an
 entry containing NUL bytes, `TypeError` on a non-string entry. A
-libstatgrab runtime failure from the setter (or any other stat call) is
-the usual warning + `false` path — pair the `false` return with
-`sg_error_details()` / `Statgrab::errorDetails()` for the code, message,
+libstatgrab runtime failure from the setter (or any other stat call)
+takes the usual warning and `false` path. Call `sg_error_details()` /
+`Statgrab::errorDetails()` after a `false` return for the code, message,
 errno, and arg.
 
 ## Notable 2.0 BC breaks
@@ -201,7 +190,7 @@ errno, and arg.
   `int` instead of stringified numbers. The 2006 release stringified
   via `snprintf("%lld")` because 32-bit PHP couldn't hold them; modern
   64-bit `zend_long` does. On 32-bit PHP builds these fields still
-  truncate above 2^31; a 64-bit build is recommended.
+  truncate above 2^31, so use a 64-bit build.
 - `sg_page_stats()` / `sg_page_stats_diff()` were swapped in 2006 and
   are now correct.
 - `sg_process_stats()` fields `gid` and `egid` are now distinct from
