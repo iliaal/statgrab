@@ -82,10 +82,15 @@ to a path probe (`/usr` and `/usr/local`). Pass
 The repo carries a vendored copy of libstatgrab 0.92.1 under
 `vendor/libstatgrab/` with one local patch (see
 `vendor/libstatgrab/LOCAL_PATCHES.md`) that fixes a process-exit leak
-upstream hasn't released yet. To use it:
+upstream hasn't released yet. A Git checkout does not include the generated
+libstatgrab `configure` script, so generate it with `autoreconf` first.
+This requires Autoconf, Automake, and Libtool in addition to the usual
+C compiler, Make, and PHP development tools (on Debian/Ubuntu, install
+`autoconf automake libtool php-dev build-essential pkg-config`). To use it:
 
 ```sh
-(cd vendor/libstatgrab && ./configure --enable-static --disable-shared --without-ncurses --with-pic && make)
+(cd vendor/libstatgrab && autoreconf -fiv && \
+  ./configure --enable-static --disable-shared --without-ncurses --with-pic && make)
 phpize
 ./configure --with-statgrab=bundled
 make
