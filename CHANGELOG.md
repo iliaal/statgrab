@@ -6,6 +6,10 @@ this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+### Fixed
+
+- `sg_process_stats()` reports `cpu_percent` as `0.0` instead of NaN, infinity, or a negative value for processes younger than one second on Linux, and `SG_PS_SORT_CPU` ordering no longer breaks on those rows.
+
 ## [2.2.2] - 2026-09-03
 
 ### Fixed

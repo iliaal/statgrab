@@ -394,6 +394,15 @@ static void php_sg_process_stats_impl(zval *return_value, zend_long sort_order, 
 		return;
 	}
 
+	/* On Linux, libstatgrab divides by whole-second uptime minus tick-based
+	 * start time, so processes younger than one second yield NaN, infinite,
+	 * or negative percentages. NaN also breaks qsort's ordering contract. */
+	for (size_t i = 0; i < entries; i++) {
+		if (!zend_finite(ps[i].cpu_percent) || ps[i].cpu_percent < 0.0) {
+			ps[i].cpu_percent = 0.0;
+		}
+	}
+
 	if (sort_given) {
 		int (*cmp)(const void *, const void *) = NULL;
 		switch (sort_order) {
