@@ -14,6 +14,20 @@ if (count($fs) === 0) {
     echo "DONE\n";
     exit;
 }
+$keys = [
+    'device_name', 'device_canonical', 'fs_type', 'mnt_point', 'device_type', 'size',
+    'used', 'free', 'avail', 'total_inodes', 'used_inodes', 'free_inodes',
+    'avail_inodes', 'io_size', 'block_size', 'total_blocks', 'free_blocks',
+    'used_blocks', 'avail_blocks', 'systime',
+];
+foreach ([$fs, (new Statgrab())->filesystems()] as $rows) {
+    foreach ($rows as $record) {
+        if (array_keys($record) !== $keys) {
+            echo "FAIL: record keys or order changed\n";
+        }
+    }
+}
+
 $row = $fs[0];
 foreach (['device_name', 'device_canonical', 'fs_type', 'mnt_point'] as $k) {
     if (!is_string($row[$k] ?? null)) {
