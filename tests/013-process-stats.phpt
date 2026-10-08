@@ -10,6 +10,20 @@ if (!is_array($ps) || count($ps) === 0) {
     exit;
 }
 
+$keys = [
+    'process_name', 'proc_title', 'pid', 'parent_pid', 'leader_pid', 'session_id',
+    'uid', 'gid', 'euid', 'egid', 'size', 'size_in_mem', 'start_time', 'time_spent',
+    'cpu_percent', 'nice', 'state', 'context_switches', 'voluntary_context_switches',
+    'involuntary_context_switches', 'systime',
+];
+foreach ([$ps, (new Statgrab())->processes()] as $rows) {
+    foreach ($rows as $record) {
+        if (array_keys($record) !== $keys) {
+            echo "FAIL: record keys or order changed\n";
+        }
+    }
+}
+
 $row = $ps[0];
 foreach (['process_name', 'proc_title'] as $k) {
     if (!is_string($row[$k] ?? null)) {

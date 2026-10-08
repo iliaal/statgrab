@@ -183,7 +183,8 @@ static void php_sg_fs(zval *return_value)
 	array_init(return_value);
 	for (size_t i = 0; i < entries; i++) {
 		zval row;
-		array_init(&row);
+		/* Reserve all fields up front to avoid growing each mount record. */
+		array_init_size(&row, 20);
 		PHP_SG_ADD_STRING_OR_EMPTY(&row, "device_name",      fs[i].device_name);
 		PHP_SG_ADD_STRING_OR_EMPTY(&row, "device_canonical", fs[i].device_canonical);
 		PHP_SG_ADD_STRING_OR_EMPTY(&row, "fs_type",          fs[i].fs_type);
@@ -437,7 +438,8 @@ static void php_sg_process_stats_impl(zval *return_value, zend_long sort_order, 
 	array_init(return_value);
 	for (zend_long i = 0; i < limit; i++) {
 		zval row;
-		array_init(&row);
+		/* Reserve all fields up front to avoid growing each process record. */
+		array_init_size(&row, 21);
 		PHP_SG_ADD_STRING_OR_EMPTY(&row, "process_name", ps[i].process_name);
 		PHP_SG_ADD_STRING_OR_EMPTY(&row, "proc_title",   ps[i].proctitle);
 		PHP_SG_ADD_LONG(&row, "pid",         ps[i].pid);
