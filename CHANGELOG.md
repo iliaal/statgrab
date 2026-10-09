@@ -8,6 +8,7 @@ this project adheres to [Semantic Versioning](https://semver.org).
 
 ### Fixed
 
+- `./configure --with-statgrab=<prefix>` ran its libstatgrab header and link checks against the system paths instead of the given prefix, so a valid custom install failed unless CPPFLAGS and LDFLAGS were set by hand; the checks now use the prefix and `--with-libdir`.
 - `sg_process_stats()` reports `cpu_percent` as `0.0` instead of NaN, infinity, or a negative value for processes younger than one second on Linux, and `SG_PS_SORT_CPU` ordering no longer breaks on those rows.
 
 ## [2.2.2] - 2026-09-03
