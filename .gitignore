@@ -79,6 +79,7 @@ tests/*.log
 tests/*.out
 tests/*.php
 tests/*.sh
+!tests/configure-prefix.sh
 tests/*.mem
 statgrab-*.tgz
 

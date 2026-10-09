@@ -78,6 +78,9 @@ jobs:
           tools: phpize, php-config
           coverage: none
 
+      - name: Test custom-prefix configure checks
+        run: sh tests/configure-prefix.sh
+
       - name: Build extension
         run: |
           phpize

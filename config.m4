@@ -69,6 +69,12 @@ if test "$PHP_STATGRAB" != "no"; then
     fi
     PHP_ADD_INCLUDE([$STATGRAB_DIR/include])
     PHP_ADD_LIBRARY_WITH_PATH([statgrab], [$STATGRAB_DIR/$PHP_LIBDIR], [STATGRAB_SHARED_LIBADD])
+    dnl PHP_ADD_* above configures the extension build, not Autoconf probes.
+    dnl Check the selected prefix rather than an unrelated system installation.
+    STATGRAB_SAVE_CPPFLAGS="$CPPFLAGS"
+    STATGRAB_SAVE_LDFLAGS="$LDFLAGS"
+    CPPFLAGS="-I$STATGRAB_DIR/include $CPPFLAGS"
+    LDFLAGS="-L$STATGRAB_DIR/$PHP_LIBDIR $LDFLAGS"
     AC_CHECK_LIB([statgrab], [sg_init], [],
       [AC_MSG_ERROR([libstatgrab link check failed in $STATGRAB_DIR.])])
     AC_MSG_CHECKING([for sg_get_error_details in libstatgrab])
@@ -77,6 +83,8 @@ if test "$PHP_STATGRAB" != "no"; then
       [[sg_error_details det; (void) sg_get_error_details(&det);]])],
       [AC_MSG_RESULT([yes])],
       [AC_MSG_ERROR([libstatgrab in $STATGRAB_DIR lacks sg_get_error_details; need >= 0.92.])])
+    CPPFLAGS="$STATGRAB_SAVE_CPPFLAGS"
+    LDFLAGS="$STATGRAB_SAVE_LDFLAGS"
   fi
 
   PHP_SUBST([STATGRAB_SHARED_LIBADD])
