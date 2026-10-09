@@ -78,7 +78,8 @@ if test "$PHP_STATGRAB" != "no"; then
     AC_CHECK_LIB([statgrab], [sg_init], [],
       [AC_MSG_ERROR([libstatgrab link check failed in $STATGRAB_DIR.])])
     AC_MSG_CHECKING([for sg_get_error_details in libstatgrab])
-    AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+    dnl A newer header can coexist with an older library; require the symbol too.
+    AC_LINK_IFELSE([AC_LANG_PROGRAM(
       [[#include <statgrab.h>]],
       [[sg_error_details det; (void) sg_get_error_details(&det);]])],
       [AC_MSG_RESULT([yes])],
