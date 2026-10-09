@@ -385,6 +385,31 @@ static void php_sg_process_count(zval *return_value)
 
 static void php_sg_process_stats_impl(zval *return_value, zend_long sort_order, zend_long num_entries, int sort_given)
 {
+	/* Reject invalid arguments before collecting or sorting process stats. */
+	int (*cmp)(const void *, const void *) = NULL;
+	if (sort_given) {
+		switch (sort_order) {
+			case 0: cmp = sg_process_compare_name; break;
+			case 1: cmp = sg_process_compare_pid;  break;
+			case 2: cmp = sg_process_compare_uid;  break;
+			case 3: cmp = sg_process_compare_gid;  break;
+			case 4: cmp = sg_process_compare_size; break;
+			case 5: cmp = sg_process_compare_res;  break;
+			case 6: cmp = sg_process_compare_cpu;  break;
+			case 7: cmp = sg_process_compare_time; break;
+			default:
+				php_error_docref(NULL, E_WARNING,
+					"'" ZEND_LONG_FMT "' is not a supported sorting mode", sort_order);
+				RETVAL_FALSE;
+				return;
+		}
+	}
+
+	if (num_entries < 0) {
+		zend_argument_value_error(2, "must be greater than or equal to 0");
+		RETURN_THROWS();
+	}
+
 	size_t entries = 0;
 	/* _r returns an owned copy so sorting never mutates the library vector. */
 	sg_process_stats *ps = sg_get_process_stats_r(&entries);
@@ -404,32 +429,10 @@ static void php_sg_process_stats_impl(zval *return_value, zend_long sort_order, 
 		}
 	}
 
-	if (sort_given) {
-		int (*cmp)(const void *, const void *) = NULL;
-		switch (sort_order) {
-			case 0: cmp = sg_process_compare_name; break;
-			case 1: cmp = sg_process_compare_pid;  break;
-			case 2: cmp = sg_process_compare_uid;  break;
-			case 3: cmp = sg_process_compare_gid;  break;
-			case 4: cmp = sg_process_compare_size; break;
-			case 5: cmp = sg_process_compare_res;  break;
-			case 6: cmp = sg_process_compare_cpu;  break;
-			case 7: cmp = sg_process_compare_time; break;
-			default:
-				sg_free_stats_buf(ps);
-				php_error_docref(NULL, E_WARNING,
-					"'" ZEND_LONG_FMT "' is not a supported sorting mode", sort_order);
-				RETVAL_FALSE;
-				return;
-		}
+	if (cmp != NULL) {
 		qsort(ps, entries, sizeof(*ps), cmp);
 	}
 
-	if (num_entries < 0) {
-		sg_free_stats_buf(ps);
-		zend_argument_value_error(2, "must be greater than or equal to 0");
-		RETURN_THROWS();
-	}
 	zend_long limit = num_entries;
 	if (limit == 0 || (zend_ulong)limit > entries) {
 		limit = (zend_long)entries;

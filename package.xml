@@ -115,6 +115,7 @@ See CHANGELOG.md for the full list.
 <file name="027-set-valid-filesystems-nul.phpt" role="test" />
 <file name="028-cpu-percent-sources.phpt" role="test" />
 <file name="029-set-valid-filesystems-empty.phpt" role="test" />
+<file name="031-process-arguments.phpt" role="test" />
    </dir>
   </dir>
  </contents>
