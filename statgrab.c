@@ -45,6 +45,13 @@ static void php_sg_emit_error(void)
 	add_assoc_string_ex((arr), (key), sizeof(key) - 1, (char *)(_v ? _v : "")); \
 } while (0)
 
+/* A zero-tick diff makes libstatgrab divide 0 by 0. Keep CPU samples
+ * usable as numbers (including JSON) without changing finite percentages. */
+static double php_sg_finite_cpu_percent(double value)
+{
+	return zend_finite(value) ? value : 0.0;
+}
+
 static void php_sg_cpu_percent(zval *return_value, zend_long source)
 {
 	size_t entries = 0;
@@ -90,12 +97,12 @@ static void php_sg_cpu_percent(zval *return_value, zend_long source)
 	}
 
 	array_init(return_value);
-	PHP_SG_ADD_DOUBLE(return_value, "user",         cpu[0].user);
-	PHP_SG_ADD_DOUBLE(return_value, "kernel",       cpu[0].kernel);
-	PHP_SG_ADD_DOUBLE(return_value, "idle",         cpu[0].idle);
-	PHP_SG_ADD_DOUBLE(return_value, "iowait",       cpu[0].iowait);
-	PHP_SG_ADD_DOUBLE(return_value, "swap",         cpu[0].swap);
-	PHP_SG_ADD_DOUBLE(return_value, "nice",         cpu[0].nice);
+	PHP_SG_ADD_DOUBLE(return_value, "user",         php_sg_finite_cpu_percent(cpu[0].user));
+	PHP_SG_ADD_DOUBLE(return_value, "kernel",       php_sg_finite_cpu_percent(cpu[0].kernel));
+	PHP_SG_ADD_DOUBLE(return_value, "idle",         php_sg_finite_cpu_percent(cpu[0].idle));
+	PHP_SG_ADD_DOUBLE(return_value, "iowait",       php_sg_finite_cpu_percent(cpu[0].iowait));
+	PHP_SG_ADD_DOUBLE(return_value, "swap",         php_sg_finite_cpu_percent(cpu[0].swap));
+	PHP_SG_ADD_DOUBLE(return_value, "nice",         php_sg_finite_cpu_percent(cpu[0].nice));
 	PHP_SG_ADD_LONG  (return_value, "previous_run", cpu[0].time_taken);
 
 	if (cpu_owned) {
