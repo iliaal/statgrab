@@ -14,11 +14,16 @@ cd "$work/build"
     exit 1
 }
 
-cat > "$work/prefix/include/statgrab.h" <<'EOF'
+cat > "$work/statgrab.h" <<'EOF'
 typedef struct { int error; } sg_error_details;
 int sg_get_error_details(sg_error_details *details);
 EOF
-printf '%s\n' 'int sg_init(int ignore_errors) { return ignore_errors; }' > "$work/stub.c"
+cp "$work/statgrab.h" "$work/prefix/include/statgrab.h"
+cat > "$work/stub.c" <<'EOF'
+#include "statgrab.h"
+int sg_init(int ignore_errors) { return ignore_errors; }
+int sg_get_error_details(sg_error_details *details) { return details == 0; }
+EOF
 "${CC:-cc}" -c "$work/stub.c" -o "$work/stub.o"
 "${AR:-ar}" cr "$work/prefix/lib/libstatgrab.a" "$work/stub.o"
 
@@ -47,9 +52,19 @@ mv "$work/prefix/lib" "$work/prefix/lib64"
 check_configure success lib64 'checking for sg_get_error_details in libstatgrab... yes'
 echo 'PASS: custom library directory'
 
+# A current header must not hide an older or mismatched library.
+cp "$work/prefix/lib64/libstatgrab.a" "$work/valid.a"
+printf '%s\n' 'int sg_init(int ignore_errors) { return ignore_errors; }' > "$work/stub.c"
+"${CC:-cc}" -c "$work/stub.c" -o "$work/stub.o"
+"${AR:-ar}" cr "$work/prefix/lib64/libstatgrab.a" "$work/stub.o"
+check_configure failure lib64 'lacks sg_get_error_details; need >= 0.92'
+echo 'PASS: library missing required API rejected despite current header'
+mv "$work/valid.a" "$work/prefix/lib64/libstatgrab.a"
+
 printf '%s\n' '/* Old header without the required API. */' > "$work/prefix/include/statgrab.h"
 check_configure failure lib64 'lacks sg_get_error_details; need >= 0.92'
 echo 'PASS: incompatible header rejected'
+cp "$work/statgrab.h" "$work/prefix/include/statgrab.h"
 
 rm "$work/prefix/lib64/libstatgrab.a"
 printf '%s\n' 'int unrelated(void) { return 0; }' > "$work/stub.c"
