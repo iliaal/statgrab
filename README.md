@@ -111,10 +111,10 @@ The 2006 function names are preserved.
 ```php
 sg_cpu_percent_usage(int $source = Statgrab::CPU_PERCENT_ENTIRE): array|false
 //   $source: CPU_PERCENT_ENTIRE (cumulative since boot, default),
-//            CPU_PERCENT_LAST_DIFF (since previous internal snapshot),
-//            CPU_PERCENT_NEW_DIFF (since this call)
+//            CPU_PERCENT_LAST_DIFF (reuse the latest diff; collect one if absent),
+//            CPU_PERCENT_NEW_DIFF (collect a new diff from the previous CPU sample)
 sg_cpu_totals(): array|false              // cumulative jiffies + ctx switches/syscalls/IRQs
-sg_cpu_diff(): array|false                // jiffies since last call
+sg_cpu_diff(): array|false                // jiffies since the previous CPU sample; see below
 sg_diskio_stats(): array|false            // [diskname => [read, written, time_frame]]
 sg_diskio_stats_diff(): array|false
 sg_fs_stats(): array|false                // mounted filesystems with size/used/inodes/...
@@ -133,12 +133,39 @@ sg_network_iface_stats(): array|false     // [ifname => {speed, duplex, active}]
 // 2.1 additions:
 sg_valid_filesystems(): array|false       // list of fs-type strings libstatgrab treats as "real"
 sg_set_valid_filesystems(array $filesystems): bool  // subsequent sg_fs_stats() only returns these fs_type values
-sg_snapshot(): bool                       // re-seed libstatgrab's internal counters (call before a sliding-window sample)
+sg_snapshot(): bool                       // backend snapshot hook; see CPU sampling below
 sg_error_details(): array|false           // [code, errno, message, arg] for the pending libstatgrab error, or false if none
 ```
 
-CPU results (`sg_cpu_percent_usage()`, `sg_cpu_totals()`, `sg_cpu_diff()`)
-carry a `previous_run` key with the timestamp of the previous sample.
+### CPU sampling and timing
+
+With bundled libstatgrab 0.92.1 on the supported Unix platforms, CPU
+results carry the legacy `previous_run` key with these meanings (in whole
+seconds). The corresponding `Statgrab` methods use the same behavior:
+
+- `sg_cpu_totals()` / `cpuStats()` and
+  `sg_cpu_percent_usage(CPU_PERCENT_ENTIRE)` / `cpu(CPU_PERCENT_ENTIRE)`:
+  the Unix timestamp when the current cumulative sample was collected.
+- `sg_cpu_diff()` / `cpuDiff()` and
+  `sg_cpu_percent_usage(CPU_PERCENT_NEW_DIFF)` / `cpu(CPU_PERCENT_NEW_DIFF)`:
+  collect a new CPU sample and report elapsed wall-clock seconds since
+  the previous CPU sample. If no baseline exists yet, the first call
+  returns cumulative data and its collection timestamp instead.
+- `sg_cpu_percent_usage(CPU_PERCENT_LAST_DIFF)` / `cpu(CPU_PERCENT_LAST_DIFF)`:
+  reuse the most recently computed diff and its elapsed seconds without
+  collecting another sample. If no diff exists, collect one using the
+  same first-call behavior as `CPU_PERCENT_NEW_DIFF`.
+
+The `CPU_PERCENT_*` names above are `Statgrab` class constants. CPU
+sampling state is shared by both APIs within the calling thread:
+cumulative CPU calls also replace its baseline. Whole-second wall-clock differences may be zero for rapid
+samples and can be affected by system clock adjustments.
+
+To measure a fresh interval, call `sg_cpu_totals()`, wait for the desired
+interval, then call `sg_cpu_percent_usage(Statgrab::CPU_PERCENT_NEW_DIFF)`.
+Avoid other CPU sampling calls between them. `sg_snapshot()` is a no-op
+in bundled libstatgrab on Unix; it does not seed or reset these counters.
+System-linked builds use the installed libstatgrab's backend behavior.
 
 Rapid consecutive CPU diff samples can contain no elapsed CPU ticks. In
 that case CPU percentages are `0.0` rather than NaN, so samples remain
@@ -160,7 +187,7 @@ $sg->processes(Statgrab::SORT_CPU, 10);    // processes(?int $sort_order = null,
 $sg->disks(diff: true);
 $sg->validFilesystems();                   // array|false: list of fs-type strings
 $sg->setValidFilesystems(['ext4']);        // bool: subsequent filesystems() only returns these fs_type values
-$sg->snapshot();                           // bool: re-seed libstatgrab's internal counters
+$sg->snapshot();                           // bool: backend snapshot hook; see CPU sampling above
 $sg->errorDetails();                       // array|false: [code, errno, message, arg], or false if none pending
 ```
 
