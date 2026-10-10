@@ -140,6 +140,10 @@ sg_error_details(): array|false           // [code, errno, message, arg] for the
 CPU results (`sg_cpu_percent_usage()`, `sg_cpu_totals()`, `sg_cpu_diff()`)
 carry a `previous_run` key with the timestamp of the previous sample.
 
+Rapid consecutive CPU diff samples can contain no elapsed CPU ticks. In
+that case CPU percentages are `0.0` rather than NaN, so samples remain
+JSON-encodable; wait between samples to measure meaningful utilization.
+
 `sg_diskio_stats()` / `sg_diskio_stats_diff()`, `sg_network_stats()` /
 `sg_network_stats_diff()`, and `sg_network_iface_stats()` key rows by
 device/interface name; a duplicate name (multipath/LVM can repeat one)
