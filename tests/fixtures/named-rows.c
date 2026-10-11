@@ -1,6 +1,18 @@
 /* Test-only Linux interposer: predictable rows without privileged devices. */
+#define _GNU_SOURCE
+#include <dlfcn.h>
 #include <statgrab.h>
 #include <stddef.h>
+
+/* Some PHP builds dlopen extensions with RTLD_DEEPBIND, which otherwise
+ * bypasses preloaded stat suppliers. Disable it only in this test process. */
+#ifdef RTLD_DEEPBIND
+void *dlopen(const char *filename, int flags)
+{
+    void *(*next_dlopen)(const char *, int) = dlsym(RTLD_NEXT, "dlopen");
+    return next_dlopen ? next_dlopen(filename, flags & ~RTLD_DEEPBIND) : NULL;
+}
+#endif
 
 static char *names[] = {
     "0", "0", NULL, "2", "02", "02", "-1", "-1",
