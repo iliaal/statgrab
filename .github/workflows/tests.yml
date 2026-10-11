@@ -87,6 +87,9 @@ jobs:
           ./configure --with-statgrab
           make -j$(nproc)
 
+      - name: Test numeric device and interface names
+        run: sh tests/named-rows.sh
+
       - name: Run test suite
         env:
           NO_INTERACTION: 1
