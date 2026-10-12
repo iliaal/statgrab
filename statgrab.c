@@ -140,14 +140,21 @@ static void php_sg_cpu_stats(zval *return_value, int diff)
 	PHP_SG_ADD_LONG(return_value, "previous_run",                  cpu[0].systime);
 }
 
-/* Multipath/LVM can repeat names; preserve duplicate rows with numeric keys. */
+/* Multipath/LVM can repeat names; preserve duplicate rows with numeric keys.
+ * Use PHP's numeric-string normalization for both lookup and insertion. */
 static void php_sg_add_named_row(zval *return_value, const char *name, zval *row)
 {
-	if (name && !zend_hash_str_exists(Z_ARRVAL_P(return_value),
+	if (name && !zend_symtable_str_exists(Z_ARRVAL_P(return_value),
 			name, strlen(name))) {
 		add_assoc_zval(return_value, (char *)name, row);
-	} else {
-		add_next_index_zval(return_value, row);
+	} else if (add_next_index_zval(return_value, row) == FAILURE) {
+		/* A numeric name may occupy PHP_INT_MAX, exhausting append keys.
+		 * Start at the row count and find a free non-negative integer key. */
+		zend_ulong key = zend_hash_num_elements(Z_ARRVAL_P(return_value));
+		while (zend_hash_index_exists(Z_ARRVAL_P(return_value), key)) {
+			key++;
+		}
+		zend_hash_index_add_new(Z_ARRVAL_P(return_value), key, row);
 	}
 }
 

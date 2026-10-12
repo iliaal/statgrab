@@ -8,6 +8,7 @@ this project adheres to [Semantic Versioning](https://semver.org).
 
 ### Fixed
 
+- Disk and network results preserve every row when numeric device/interface names collide with earlier names or fallback keys, including after a name fills `PHP_INT_MAX`.
 - CPU percentage samples return `0.0` instead of non-finite values when consecutive diff samples contain no CPU ticks, keeping both APIs safe to JSON-encode.
 - Custom-prefix configure checks now reject a libstatgrab library missing `sg_get_error_details` even when its header declares the API, preventing an extension with an unresolved required symbol.
 - `./configure --with-statgrab=<prefix>` ran its libstatgrab header and link checks against the system paths instead of the given prefix, so a valid custom install failed unless CPPFLAGS and LDFLAGS were set by hand; the checks now use the prefix and `--with-libdir`.

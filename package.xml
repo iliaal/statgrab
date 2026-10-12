@@ -86,6 +86,11 @@ See CHANGELOG.md for the full list.
    <file name="LICENSE"                 role="doc" />
    <file name="LICENSE.libstatgrab"     role="doc" />
    <dir name="tests">
+    <file name="named-rows.sh" role="test" />
+    <dir name="fixtures">
+     <file name="named-rows.c" role="test" />
+     <file name="named-rows.php" role="test" />
+    </dir>
     <file name="001-load.phpt"            role="test" />
     <file name="002-host.phpt"            role="test" />
     <file name="003-load.phpt"            role="test" />
