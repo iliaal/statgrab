@@ -8,4 +8,4 @@ repo: libstatgrab/libstatgrab
 # Upstream tags as LIBSTATGRAB_0_92_1, not vX.Y.Z. tag_regex pulls
 # the underscored version; the gate normalizes _ -> .
 tag_regex: "LIBSTATGRAB_(.+)"
-note: "0.92.1 + LOCAL_PATCHES.md (sg_destroy_globals off-by-one, compute_diff bitmap size, sessid init); upstream PRs libstatgrab/libstatgrab#141, #147, #148"
+note: "0.92.1 + LOCAL_PATCHES.md (sg_destroy_globals off-by-one, compute_diff bitmap size, sessid init, unsigned shifts); upstream PRs libstatgrab/libstatgrab#141, #147, #148"
