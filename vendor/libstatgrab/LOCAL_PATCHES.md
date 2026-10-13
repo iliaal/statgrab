@@ -65,3 +65,24 @@ interfaces with correct deltas.
 Upstream: https://github.com/libstatgrab/libstatgrab/pull/148. Drop this
 patch once upstream merges it and statgrab re-vendors a release that
 includes it.
+
+### 0003-process-stats-initialise-sessid.patch (2026-10-13)
+
+`src/libstatgrab/process_stats.c` — `sg_process_stats_item_init()` left
+`sessid` unset. Only the kinfo_proc backends (BSD/Darwin) assign it;
+the Linux, Solaris, HP-UX, and AIX backends never do, and the stats
+vector is allocated without zeroing. `session_id` in
+`sg_process_stats()` rows therefore carried leftover heap bytes on
+Linux, including fragments of previously freed strings.
+
+Fix: initialise `sessid` to 0 in the item init function. The BSD/Darwin
+backends still overwrite it with the real session id.
+
+Reproducer: `tests/033-process-session-id.phpt` asserts every row's
+`session_id` is 0 on Linux. Against the unpatched library it fails with
+values such as `-1094795586` (ASan's malloc fill) or arbitrary integers
+on a normal build.
+
+Upstream: https://github.com/libstatgrab/libstatgrab/pull/147. Drop this
+patch once upstream merges it and statgrab re-vendors a release that
+includes it.
