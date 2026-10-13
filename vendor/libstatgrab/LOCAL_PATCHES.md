@@ -39,8 +39,10 @@ or any function that exercises `sg_user_init`'s vector.
 
 After patch: zero leaks reported.
 
-Submitted upstream as a PR against `libstatgrab/libstatgrab` (link goes
-here once filed).
+Upstream: https://github.com/libstatgrab/libstatgrab/pull/141, merged
+to master as 97885479a7c228d2d2d64e13f5177c1cec8e99b3 (2026-08-13) but not
+in a release yet (latest is 0.92.1). Drop this patch once statgrab
+re-vendors a release that includes it.
 
 ### 0002-vector-size-compute-diff-bitmap-from-last-vector.patch (2026-10-13)
 
