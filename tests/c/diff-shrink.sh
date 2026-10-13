@@ -1,8 +1,9 @@
 #!/bin/sh
 # Linux regression test for libstatgrab's sg_vector_compute_diff().
 # LIBSTATGRAB_DIR names a configured and built libstatgrab tree (default: the
-# in-tree vendor/libstatgrab). It must be built with -fsanitize=address: the
-# overflow is a stack read/write that only ASan reports reliably.
+# in-tree vendor/libstatgrab). It must be built with
+# -fsanitize=address,undefined: without sanitizers the out-of-bounds bitmap
+# access usually goes unnoticed.
 set -eu
 src=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 lib="${LIBSTATGRAB_DIR:-$src/vendor/libstatgrab}/src/libstatgrab"

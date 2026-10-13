@@ -29,10 +29,10 @@ exposes the same shape via Statgrab::errorDetails().
 
 The repo also ships a vendored libstatgrab 0.92.1 with local
 patches for an sg_destroy_globals off-by-one that leaks the
-user-stats vector at process exit, a stack overflow in the diff
-getters when the device count shrinks, uninitialised process
-session IDs, and two undefined shifts (none in an upstream release
-yet). Configure with --with-statgrab=bundled
+user-stats vector at process exit, a stack buffer overflow in the
+diff getters when the device count shrinks, and uninitialised
+process session IDs (none in an upstream release yet), plus a local
+fix for two undefined shifts. Configure with --with-statgrab=bundled
 to statically link the patched copy without waiting on system
 packages.
 

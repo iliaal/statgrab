@@ -53,16 +53,18 @@ over `last_vector->used_count`. When the item count shrinks across a
 disk removed), `BIT_ISSET` reads and `BIT_SET` writes past the end of
 the stack VLA. Reachable from `sg_get_network_io_stats_diff()`,
 `sg_get_disk_io_stats_diff()`, and `sg_get_fs_stats_diff()`; in PHP,
-from `sg_network_stats_diff()` and `sg_diskio_stats_diff()`.
+from `sg_network_stats_diff()`, `sg_diskio_stats_diff()`,
+`Statgrab::network(true)`, and `Statgrab::disks(true)`.
 
 Fix: size the bitmap from `last_vector->used_count`, the range `j`
 actually spans.
 
 Reproducer: `tests/c/diff-shrink.sh` serves 40 interfaces through a
-wrapped `/proc/net/dev`, then 5. Against an ASan build of the unpatched
-library it aborts with `dynamic-stack-buffer-overflow ... in
-sg_vector_compute_diff`; after the patch it reports the 5 surviving
-interfaces with correct deltas.
+wrapped `/proc/net/dev`, then 5. Against an ASan+UBSan build with this
+patch reverted it stops with `vector.c:357: runtime error: index 1 out
+of bounds for type 'unsigned int [*]'` (without UBSan, ASan reports a
+`dynamic-stack-buffer-overflow` in `sg_vector_compute_diff`); with the
+patch it reports the 5 surviving interfaces with correct deltas.
 
 Upstream: https://github.com/libstatgrab/libstatgrab/pull/148. Drop this
 patch once upstream merges it and statgrab re-vendors a release that

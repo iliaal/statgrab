@@ -1,5 +1,5 @@
---- /tmp/libstatgrab-pristine/src/libstatgrab/globals.c	2021-07-28 11:01:55.000000000 -0400
-+++ /home/ilia/ai/statgrab/vendor/libstatgrab/src/libstatgrab/globals.c	2026-04-27 22:04:17.850445388 -0400
+--- a/src/libstatgrab/globals.c
++++ b/src/libstatgrab/globals.c
 @@ -475,9 +475,13 @@
  # if defined(HAVE_PTHREAD)
  		int rc;
