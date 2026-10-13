@@ -36,7 +36,7 @@ fix for two undefined shifts. Configure with --with-statgrab=bundled
 to statically link the patched copy without waiting on system
 packages.
 
-Requires libstatgrab >= 0.92 and PHP >= 8.0 (NTS).
+Requires libstatgrab >= 0.92 and PHP >= 8.0 (NTS or ZTS).
  </description>
  <lead>
   <name>Ilia Alshanetsky</name>

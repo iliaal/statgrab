@@ -193,7 +193,7 @@ jobs:
           CFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer" \
           LDFLAGS="-fsanitize=address,undefined" \
           ./configure --enable-static --disable-shared --without-ncurses --with-pic
-          make -j$(nproc)
+          make -j"$(nproc)"
           cd "$GITHUB_WORKSPACE"
           LIBSTATGRAB_DIR=/tmp/libstatgrab-asan sh tests/c/diff-shrink.sh
 
@@ -224,7 +224,7 @@ jobs:
           grep -q 'Bundled libstatgrab archive missing' /tmp/make-after-clean.log
           mkdir -p vendor/libstatgrab/src/libstatgrab/.libs
           cp /tmp/libstatgrab.a.keep vendor/libstatgrab/src/libstatgrab/.libs/libstatgrab.a
-          make -j$(nproc)
+          make -j"$(nproc)"
           sh tests/bundled-static.sh
 
       - name: Run test suite under ASan + LeakSanitizer

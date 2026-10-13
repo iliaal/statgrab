@@ -51,7 +51,7 @@ fi
 
 # Leaks are covered by the NTS ASan suite; this run checks memory safety.
 ASAN_OPTIONS=detect_leaks=0:halt_on_error=1:detect_odr_violation=0
-UBSAN_OPTIONS=print_stacktrace=1
+UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1
 export ASAN_OPTIONS UBSAN_OPTIONS
 
 "$work/driver" "$ext" 1 0 "$fixtures/zts-types.php" >"$work/types.log" 2>&1 || {
@@ -61,6 +61,10 @@ export ASAN_OPTIONS UBSAN_OPTIONS
 }
 SG_ZTS_FS_TYPES=$(sed -n 's/^types: //p' "$work/types.log")
 if test -z "$SG_ZTS_FS_TYPES"; then
+    if test -n "${CI:-}"; then
+        echo 'FAIL: sg_fs_stats() reports no usable filesystem types; CI must exercise the race'
+        exit 1
+    fi
     echo 'SKIP: sg_fs_stats() reports no usable filesystem types on this host'
     exit 0
 fi
@@ -79,7 +83,7 @@ scenario() {
         "$work/driver" "$ext" "$requests" "$seconds" "$@" >"$log" 2>&1 || status=$?
     got=$(grep -o 'ok [a-z]*' "$log" | wc -l)
     if test "$status" -ne 0 || test "$got" -ne "$want" \
-        || grep -e 'ERROR: AddressSanitizer' -e 'FAIL [a-z]*:' "$log" >/dev/null; then
+        || grep -e 'ERROR: AddressSanitizer' -e 'runtime error:' -e 'FAIL [a-z]*:' "$log" >/dev/null; then
         echo "FAIL $name (exit $status, $got/$want ok lines)"
         cat "$log"
         failed=1
