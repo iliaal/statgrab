@@ -97,6 +97,8 @@ make
 ```
 
 The resulting `.so` has no `libstatgrab.so` runtime dependency.
+PHP's `make clean` also deletes the bundled `libstatgrab.a`; after it,
+run `make -C vendor/libstatgrab` before `make`, or the build stops.
 
 The vendored libstatgrab tree stays LGPL 2.1+ (see `LICENSE.libstatgrab`);
 the extension code stays PHP-3.01 (see `LICENSE`). Dynamic-link or

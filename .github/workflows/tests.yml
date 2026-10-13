@@ -158,7 +158,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y llvm clang re2c bison autoconf automake libtool \
-                                  pkg-config libxml2-dev libsqlite3-dev
+                                  pkg-config libxml2-dev libsqlite3-dev libstatgrab-dev
 
       - name: Resolve clang runtime dir
         id: clang_rt
@@ -197,6 +197,24 @@ jobs:
           LDFLAGS="-fsanitize=address,undefined -shared-libasan" \
           ./configure --with-statgrab=bundled --with-php-config=/tmp/php-asan/bin/php-config
           make -j$(nproc)
+
+      - name: Check bundled libstatgrab is statically linked
+        env:
+          LD_LIBRARY_PATH: ${{ steps.clang_rt.outputs.dir }}
+        run: |
+          sh tests/bundled-static.sh
+          cp vendor/libstatgrab/src/libstatgrab/.libs/libstatgrab.a /tmp/libstatgrab.a.keep
+          make clean
+          if make > /tmp/make-after-clean.log 2>&1; then
+            echo "make after make clean should fail without the bundled archive" >&2
+            exit 1
+          fi
+          cat /tmp/make-after-clean.log
+          grep -q 'Bundled libstatgrab archive missing' /tmp/make-after-clean.log
+          mkdir -p vendor/libstatgrab/src/libstatgrab/.libs
+          cp /tmp/libstatgrab.a.keep vendor/libstatgrab/src/libstatgrab/.libs/libstatgrab.a
+          make -j$(nproc)
+          sh tests/bundled-static.sh
 
       - name: Run test suite under ASan + LeakSanitizer
         env:

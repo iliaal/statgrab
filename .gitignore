@@ -80,6 +80,7 @@ tests/*.out
 tests/*.php
 tests/*.sh
 !tests/configure-prefix.sh
+!tests/bundled-static.sh
 tests/*.mem
 statgrab-*.tgz
 
