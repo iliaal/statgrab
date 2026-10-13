@@ -6,8 +6,18 @@ this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+### Security
+
+- Under a threaded (ZTS) SAPI, concurrent `sg_fs_stats()`, `sg_valid_filesystems()`, and `sg_set_valid_filesystems()` calls (and their `Statgrab` methods) could use freed memory or double free libstatgrab's process-wide valid-filesystems list. These calls are now serialized across threads.
+- Bundled libstatgrab: the network and disk diff getters (`sg_network_stats_diff()`, `sg_diskio_stats_diff()`, and `Statgrab::network(true)` / `Statgrab::disks(true)`) read and wrote past a stack buffer when the number of interfaces or disks dropped across a multiple of 32 between calls. Carried as a local patch from libstatgrab/libstatgrab#148.
+- `proc_title` in `sg_process_stats()` rows is now capped at 4096 bytes, cut on a UTF-8 boundary, so processes run by other local users with very large argument lists can no longer exhaust `memory_limit`.
+
 ### Fixed
 
+- Bundled build: `make clean` followed by `make` silently linked the system libstatgrab instead of the bundled copy, dropping its local patches. The bundled archive is now linked by path, and `make` fails with instructions if it is missing.
+- Bundled libstatgrab: `session_id` in `sg_process_stats()` rows returned uninitialised heap bytes on Linux; it is now 0. Carried as a local patch from libstatgrab/libstatgrab#147.
+- Bundled libstatgrab: two undefined signed shifts (filesystem bitmap macros and the ethtool link-speed decode) no longer trip UBSan.
+- `sg_process_stats()` and `sg_valid_filesystems()` no longer leak libstatgrab's result buffer when a `memory_limit` error interrupts building the array.
 - Disk and network results preserve every row when numeric device/interface names collide with earlier names or fallback keys, including after a name fills `PHP_INT_MAX`.
 - CPU percentage samples return `0.0` instead of non-finite values when consecutive diff samples contain no CPU ticks, keeping both APIs safe to JSON-encode.
 - Custom-prefix configure checks now reject a libstatgrab library missing `sg_get_error_details` even when its header declares the API, preventing an extension with an unresolved required symbol.
