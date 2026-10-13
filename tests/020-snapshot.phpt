@@ -7,7 +7,7 @@ statgrab
 var_dump(sg_snapshot());
 var_dump((new Statgrab())->snapshot());
 
-/* A snapshot seeds the diff sources: LAST_DIFF must serve an array now. */
+/* LAST_DIFF collects its first sample if absent; Unix snapshots do not seed it. */
 $last = sg_cpu_percent_usage(Statgrab::CPU_PERCENT_LAST_DIFF);
 echo is_array($last) ? "last_diff_array\n" : "FAIL last_diff\n";
 
