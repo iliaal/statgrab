@@ -183,8 +183,19 @@ jobs:
         run: |
           cd vendor/libstatgrab
           autoreconf -fiv
+          cp -a . /tmp/libstatgrab-asan
           ./configure --enable-static --disable-shared --without-ncurses --with-pic
           make -j$(nproc)
+
+      - name: Test diff getters against an instrumented libstatgrab copy
+        run: |
+          cd /tmp/libstatgrab-asan
+          CFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer" \
+          LDFLAGS="-fsanitize=address,undefined" \
+          ./configure --enable-static --disable-shared --without-ncurses --with-pic
+          make -j$(nproc)
+          cd "$GITHUB_WORKSPACE"
+          LIBSTATGRAB_DIR=/tmp/libstatgrab-asan sh tests/c/diff-shrink.sh
 
       - name: Build extension against bundled libstatgrab
         env:
