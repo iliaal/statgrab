@@ -6,6 +6,7 @@ PHP_ARG_WITH([statgrab], [for libstatgrab support],
 
 if test "$PHP_STATGRAB" != "no"; then
   STATGRAB_FOUND=no
+  STATGRAB_BUNDLED=no
 
   if test "$PHP_STATGRAB" = "bundled"; then
     AC_MSG_CHECKING([for bundled libstatgrab])
@@ -23,7 +24,13 @@ if test "$PHP_STATGRAB" != "no"; then
     fi
     AC_MSG_RESULT([using $BUNDLED_LIB])
     PHP_ADD_INCLUDE([$BUNDLED_INC])
-    PHP_ADD_LIBRARY_WITH_PATH([statgrab], [$abs_srcdir/vendor/libstatgrab/src/libstatgrab/.libs], [STATGRAB_SHARED_LIBADD])
+    dnl Link the archive by path: PHP's "make clean" deletes every .a and .libs/
+    dnl under the source tree, and a -L/-l lookup would then silently resolve to
+    dnl a system libstatgrab without the local patches.
+    STATGRAB_SHARED_LIBADD="$BUNDLED_LIB"
+    STATGRAB_SHARED_DEPENDENCIES="$BUNDLED_LIB"
+    PHP_SUBST([STATGRAB_SHARED_DEPENDENCIES])
+    STATGRAB_BUNDLED=yes
     STATGRAB_FOUND=yes
   fi
 
@@ -91,4 +98,7 @@ if test "$PHP_STATGRAB" != "no"; then
   PHP_SUBST([STATGRAB_SHARED_LIBADD])
   AC_DEFINE([HAVE_LIBSTATGRAB], 1, [Have libstatgrab >= 0.92])
   PHP_NEW_EXTENSION([statgrab], [statgrab.c], [$ext_shared])
+  if test "$STATGRAB_BUNDLED" = "yes"; then
+    PHP_ADD_MAKEFILE_FRAGMENT([$abs_srcdir/Makefile.bundled.frag])
+  fi
 fi

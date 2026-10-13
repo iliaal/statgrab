@@ -27,14 +27,16 @@ violations. sg_error_details() returns array{code,errno,message,arg}
 from libstatgrab (or false when no error is pending); the OO surface
 exposes the same shape via Statgrab::errorDetails().
 
-The repo also ships a vendored libstatgrab 0.92.1 with one local
-patch fixing an sg_destroy_globals off-by-one that leaks the
-user-stats vector at process exit (submitted upstream, not yet
-released). Configure with --with-statgrab=bundled to statically
-link the patched copy and ship the leak fix without waiting on
-system packages.
+The repo also ships a vendored libstatgrab 0.92.1 with local
+patches for an sg_destroy_globals off-by-one that leaks the
+user-stats vector at process exit, a stack buffer overflow in the
+diff getters when the device count shrinks, and uninitialised
+process session IDs (none in an upstream release yet), plus a local
+fix for two undefined shifts. Configure with --with-statgrab=bundled
+to statically link the patched copy without waiting on system
+packages.
 
-Requires libstatgrab >= 0.92 and PHP >= 8.0 (NTS).
+Requires libstatgrab >= 0.92 and PHP >= 8.0 (NTS or ZTS).
  </description>
  <lead>
   <name>Ilia Alshanetsky</name>
@@ -90,6 +92,12 @@ See CHANGELOG.md for the full list.
     <dir name="fixtures">
      <file name="named-rows.c" role="test" />
      <file name="named-rows.php" role="test" />
+     <file name="zts-driver.c" role="test" />
+     <file name="zts-fs.php" role="test" />
+     <file name="zts-list.php" role="test" />
+     <file name="zts-setter.php" role="test" />
+     <file name="zts-symmetric.php" role="test" />
+     <file name="zts-types.php" role="test" />
     </dir>
     <file name="001-load.phpt"            role="test" />
     <file name="002-host.phpt"            role="test" />
@@ -120,8 +128,12 @@ See CHANGELOG.md for the full list.
 <file name="027-set-valid-filesystems-nul.phpt" role="test" />
 <file name="028-cpu-percent-sources.phpt" role="test" />
 <file name="029-set-valid-filesystems-empty.phpt" role="test" />
+<file name="030-process-cpu-percent-young.phpt" role="test" />
 <file name="031-process-arguments.phpt" role="test" />
 <file name="032-cpu-percent-finite.phpt" role="test" />
+<file name="033-process-session-id.phpt" role="test" />
+<file name="034-process-title-cap.phpt" role="test" />
+<file name="zts-valid-filesystems.sh" role="test" />
 <file name="configure-prefix.sh" role="test" />
    </dir>
   </dir>

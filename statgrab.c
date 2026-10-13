@@ -27,6 +27,24 @@
 
 static int sg_initialized = 0;
 
+/* libstatgrab keeps the valid-filesystems list in an unlocked process-global
+ * that sg_set_valid_filesystems() frees and replaces, while
+ * sg_get_fs_stats() reads it and sg_get_valid_filesystems() returns it
+ * live. Serialize every call that touches it. The locked regions make no
+ * Zend calls, so a bailout cannot leave the mutex held. */
+#ifdef ZTS
+static MUTEX_T php_sg_fs_mutex = NULL;
+# define PHP_SG_FS_LOCK()   tsrm_mutex_lock(php_sg_fs_mutex)
+# define PHP_SG_FS_UNLOCK() tsrm_mutex_unlock(php_sg_fs_mutex)
+#else
+# define PHP_SG_FS_LOCK()
+# define PHP_SG_FS_UNLOCK()
+#endif
+
+/* Any local user controls their own argv, which libstatgrab reads in full,
+ * so cap each proc_title copied into PHP memory. */
+#define PHP_SG_PROC_TITLE_MAX 4096
+
 static void php_sg_emit_error(void)
 {
 	sg_error code = sg_get_error();
@@ -186,7 +204,13 @@ static void php_sg_diskio(zval *return_value, int diff)
 static void php_sg_fs(zval *return_value)
 {
 	size_t entries = 0;
+
+	/* libstatgrab checks each mount against the list between statvfs()
+	 * calls, so the whole walk runs under the lock. The returned vector is
+	 * thread-local and safe to read after unlocking. */
+	PHP_SG_FS_LOCK();
 	sg_fs_stats *fs = sg_get_fs_stats(&entries);
+	PHP_SG_FS_UNLOCK();
 
 	if (fs == NULL) {
 		php_sg_emit_error();
@@ -397,6 +421,71 @@ static void php_sg_process_count(zval *return_value)
 	PHP_SG_ADD_LONG(return_value, "systime",  pc->systime);
 }
 
+static void php_sg_add_proc_title(zval *row, const char *title)
+{
+	size_t len = 0;
+
+	if (title) {
+		len = strnlen(title, PHP_SG_PROC_TITLE_MAX + 1);
+		if (len > PHP_SG_PROC_TITLE_MAX) {
+			len = PHP_SG_PROC_TITLE_MAX;
+			/* Step back over at most three UTF-8 continuation bytes so the
+			 * cut does not split a multibyte sequence. */
+			for (int i = 0; i < 3 && len > 0
+					&& ((unsigned char)title[len] & 0xC0) == 0x80; i++) {
+				len--;
+			}
+		}
+	}
+	add_assoc_stringl_ex(row, "proc_title", sizeof("proc_title") - 1,
+		title ? title : "", len);
+}
+
+static void php_sg_build_process_rows(zval *return_value, const sg_process_stats *ps, zend_long limit)
+{
+	array_init(return_value);
+	for (zend_long i = 0; i < limit; i++) {
+		zval row;
+		/* Reserve all fields up front to avoid growing each process record. */
+		array_init_size(&row, 21);
+		PHP_SG_ADD_STRING_OR_EMPTY(&row, "process_name", ps[i].process_name);
+		php_sg_add_proc_title(&row, ps[i].proctitle);
+		PHP_SG_ADD_LONG(&row, "pid",         ps[i].pid);
+		PHP_SG_ADD_LONG(&row, "parent_pid",  ps[i].parent);
+		PHP_SG_ADD_LONG(&row, "leader_pid",  ps[i].pgid);
+		PHP_SG_ADD_LONG(&row, "session_id",  ps[i].sessid);
+		PHP_SG_ADD_LONG(&row, "uid",         ps[i].uid);
+		PHP_SG_ADD_LONG(&row, "gid",         ps[i].gid);
+		PHP_SG_ADD_LONG(&row, "euid",        ps[i].euid);
+		PHP_SG_ADD_LONG(&row, "egid",        ps[i].egid);
+		PHP_SG_ADD_LONG(&row, "size",                         ps[i].proc_size);
+		PHP_SG_ADD_LONG(&row, "size_in_mem",                  ps[i].proc_resident);
+		PHP_SG_ADD_LONG(&row, "start_time",                   ps[i].start_time);
+		PHP_SG_ADD_LONG(&row, "time_spent",                   ps[i].time_spent);
+		PHP_SG_ADD_DOUBLE(&row, "cpu_percent",                ps[i].cpu_percent);
+		PHP_SG_ADD_LONG(&row, "nice",                         ps[i].nice);
+		PHP_SG_ADD_LONG(&row, "state",                        ps[i].state);
+		PHP_SG_ADD_LONG(&row, "context_switches",             ps[i].context_switches);
+		PHP_SG_ADD_LONG(&row, "voluntary_context_switches",   ps[i].voluntary_context_switches);
+		PHP_SG_ADD_LONG(&row, "involuntary_context_switches", ps[i].involuntary_context_switches);
+		PHP_SG_ADD_LONG(&row, "systime",                      ps[i].systime);
+		add_next_index_zval(return_value, &row);
+	}
+}
+
+/* Takes ownership of ps, which is libc heap: a memory_limit bailout while
+ * building rows must not leak it. */
+static void php_sg_add_process_rows(zval *return_value, sg_process_stats *ps, zend_long limit)
+{
+	zend_try {
+		php_sg_build_process_rows(return_value, ps, limit);
+	} zend_catch {
+		sg_free_stats_buf(ps);
+		zend_bailout();
+	} zend_end_try();
+	sg_free_stats_buf(ps);
+}
+
 static void php_sg_process_stats_impl(zval *return_value, zend_long sort_order, zend_long num_entries, int sort_given)
 {
 	/* Reject invalid arguments before collecting or sorting process stats. */
@@ -452,35 +541,7 @@ static void php_sg_process_stats_impl(zval *return_value, zend_long sort_order, 
 		limit = (zend_long)entries;
 	}
 
-	array_init(return_value);
-	for (zend_long i = 0; i < limit; i++) {
-		zval row;
-		/* Reserve all fields up front to avoid growing each process record. */
-		array_init_size(&row, 21);
-		PHP_SG_ADD_STRING_OR_EMPTY(&row, "process_name", ps[i].process_name);
-		PHP_SG_ADD_STRING_OR_EMPTY(&row, "proc_title",   ps[i].proctitle);
-		PHP_SG_ADD_LONG(&row, "pid",         ps[i].pid);
-		PHP_SG_ADD_LONG(&row, "parent_pid",  ps[i].parent);
-		PHP_SG_ADD_LONG(&row, "leader_pid",  ps[i].pgid);
-		PHP_SG_ADD_LONG(&row, "session_id",  ps[i].sessid);
-		PHP_SG_ADD_LONG(&row, "uid",         ps[i].uid);
-		PHP_SG_ADD_LONG(&row, "gid",         ps[i].gid);
-		PHP_SG_ADD_LONG(&row, "euid",        ps[i].euid);
-		PHP_SG_ADD_LONG(&row, "egid",        ps[i].egid);
-		PHP_SG_ADD_LONG(&row, "size",                         ps[i].proc_size);
-		PHP_SG_ADD_LONG(&row, "size_in_mem",                  ps[i].proc_resident);
-		PHP_SG_ADD_LONG(&row, "start_time",                   ps[i].start_time);
-		PHP_SG_ADD_LONG(&row, "time_spent",                   ps[i].time_spent);
-		PHP_SG_ADD_DOUBLE(&row, "cpu_percent",                ps[i].cpu_percent);
-		PHP_SG_ADD_LONG(&row, "nice",                         ps[i].nice);
-		PHP_SG_ADD_LONG(&row, "state",                        ps[i].state);
-		PHP_SG_ADD_LONG(&row, "context_switches",             ps[i].context_switches);
-		PHP_SG_ADD_LONG(&row, "voluntary_context_switches",   ps[i].voluntary_context_switches);
-		PHP_SG_ADD_LONG(&row, "involuntary_context_switches", ps[i].involuntary_context_switches);
-		PHP_SG_ADD_LONG(&row, "systime",                      ps[i].systime);
-		add_next_index_zval(return_value, &row);
-	}
-	sg_free_stats_buf(ps);
+	php_sg_add_process_rows(return_value, ps, limit);
 }
 
 static void php_sg_users(zval *return_value)
@@ -517,23 +578,74 @@ static void php_sg_users(zval *return_value)
 	}
 }
 
+static void php_sg_build_string_list(zval *return_value, char **list, size_t count)
+{
+	array_init_size(return_value, (uint32_t)count);
+	for (char **p = list; *p; p++) {
+		add_next_index_string(return_value, *p);
+	}
+}
+
+/* Takes ownership of list, a single malloc'd block: a memory_limit bailout
+ * must not leak it. */
+static void php_sg_add_string_list(zval *return_value, char **list, size_t count)
+{
+	zend_try {
+		php_sg_build_string_list(return_value, list, count);
+	} zend_catch {
+		free(list);
+		zend_bailout();
+	} zend_end_try();
+	free(list);
+}
+
 static void php_sg_valid_filesystems(zval *return_value)
 {
-	size_t entries = 0;
+	size_t entries = 0, count = 0, bytes = 0;
+	char **copy = NULL;
+	int alloc_failed = 0;
+
+	/* Copy into one malloc'd block so no library-owned pointer outlives
+	 * the lock; emalloc here could bail out with the mutex held. */
+	PHP_SG_FS_LOCK();
 	const char **fs = sg_get_valid_filesystems(&entries);
-
-	if (fs == NULL) {
-		php_sg_emit_error();
-		RETVAL_FALSE;
-		return;
-	}
-
-	array_init(return_value);
-	for (size_t i = 0; i < entries; i++) {
-		if (fs[i]) {
-			add_next_index_string(return_value, fs[i]);
+	if (fs != NULL) {
+		for (size_t i = 0; i < entries; i++) {
+			if (fs[i]) {
+				count++;
+				bytes += strlen(fs[i]) + 1;
+			}
+		}
+		copy = malloc((count + 1) * sizeof(char *) + bytes);
+		if (copy == NULL) {
+			alloc_failed = 1;
+		} else {
+			char *p = (char *)(copy + count + 1);
+			size_t n = 0;
+			for (size_t i = 0; i < entries; i++) {
+				if (fs[i]) {
+					size_t len = strlen(fs[i]) + 1;
+					memcpy(p, fs[i], len);
+					copy[n++] = p;
+					p += len;
+				}
+			}
+			copy[n] = NULL;
 		}
 	}
+	PHP_SG_FS_UNLOCK();
+
+	if (alloc_failed) {
+		php_error_docref(NULL, E_WARNING,
+			"unable to copy the valid filesystems list: out of memory");
+		RETURN_FALSE;
+	}
+	if (copy == NULL) {
+		php_sg_emit_error();
+		RETURN_FALSE;
+	}
+
+	php_sg_add_string_list(return_value, copy, count);
 }
 
 static void php_sg_set_valid_filesystems(zval *return_value, zval *zfs)
@@ -572,9 +684,9 @@ static void php_sg_set_valid_filesystems(zval *return_value, zval *zfs)
 	} ZEND_HASH_FOREACH_END();
 	buf[i] = NULL;
 
-	/* Upstream must lock disk_stats.c: this global swap races with
-	 * sg_get_fs_stats under ZTS and cannot be fixed at this layer. */
+	PHP_SG_FS_LOCK();
 	sg_error rc = sg_set_valid_filesystems(buf);
+	PHP_SG_FS_UNLOCK();
 	efree(buf);
 
 	if (rc != SG_ERROR_NONE) {
@@ -762,6 +874,13 @@ PHP_METHOD(Statgrab, processes)
 
 PHP_MINIT_FUNCTION(statgrab)
 {
+#ifdef ZTS
+	php_sg_fs_mutex = tsrm_mutex_alloc();
+	if (php_sg_fs_mutex == NULL) {
+		return FAILURE;
+	}
+#endif
+
 	if (sg_init(1) == SG_ERROR_NONE) {
 		sg_initialized = 1;
 
@@ -820,6 +939,12 @@ PHP_MSHUTDOWN_FUNCTION(statgrab)
 		sg_shutdown();
 		sg_initialized = 0;
 	}
+#ifdef ZTS
+	if (php_sg_fs_mutex) {
+		tsrm_mutex_free(php_sg_fs_mutex);
+		php_sg_fs_mutex = NULL;
+	}
+#endif
 	return SUCCESS;
 }
 

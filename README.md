@@ -80,9 +80,11 @@ to a path probe (`/usr` and `/usr/local`). Pass
 ### Bundled libstatgrab (statically linked, leak-fixed)
 
 The repo carries a vendored copy of libstatgrab 0.92.1 under
-`vendor/libstatgrab/` with one local patch (see
-`vendor/libstatgrab/LOCAL_PATCHES.md`) that fixes a process-exit leak
-upstream hasn't released yet. A Git checkout does not include the generated
+`vendor/libstatgrab/` with local patches (see
+`vendor/libstatgrab/LOCAL_PATCHES.md`) for a process-exit leak, a stack
+buffer overflow in the diff getters, and uninitialised process session
+IDs, which upstream has not released yet, plus a local fix for two
+undefined shifts. A Git checkout does not include the generated
 libstatgrab `configure` script, so generate it with `autoreconf` first.
 This requires Autoconf, Automake, and Libtool in addition to the usual
 C compiler, Make, and PHP development tools (on Debian/Ubuntu, install
@@ -97,6 +99,8 @@ make
 ```
 
 The resulting `.so` has no `libstatgrab.so` runtime dependency.
+PHP's `make clean` also deletes the bundled `libstatgrab.a`; after it,
+run `make -C vendor/libstatgrab` before `make`, or the build stops.
 
 The vendored libstatgrab tree stays LGPL 2.1+ (see `LICENSE.libstatgrab`);
 the extension code stays PHP-3.01 (see `LICENSE`). Dynamic-link or
@@ -175,6 +179,25 @@ JSON-encodable; wait between samples to measure meaningful utilization.
 `sg_network_stats_diff()`, and `sg_network_iface_stats()` key rows by
 device/interface name; a duplicate name (multipath/LVM can repeat one)
 falls back to a numeric key instead of overwriting the earlier row.
+
+`proc_title` from `sg_process_stats()` / `processes()` holds at most 4096
+bytes of each process's command line. Any local user controls their own
+argv, so the cap keeps a few huge command lines from exhausting
+`memory_limit`. libstatgrab still reads each full command line into the
+C heap while it collects the list, so that memory is used transiently
+outside `memory_limit`. When the cut lands inside a UTF-8 sequence, the
+title ends before that sequence, so a truncated title can be up to 3 bytes
+shorter.
+
+The valid-filesystems filter is process-wide in libstatgrab, not
+per-request. In NTS builds it persists across requests in long-lived
+workers such as FPM. Under a threaded (ZTS) SAPI,
+`sg_set_valid_filesystems()` in one request also changes the
+`sg_fs_stats()` filter for every other thread. The extension serializes
+`sg_fs_stats()`, `sg_valid_filesystems()`, and `sg_set_valid_filesystems()`
+(and their `Statgrab` methods) across threads so concurrent calls are
+memory-safe. A hung mount that blocks `sg_fs_stats()` therefore stalls all
+of these calls in every thread.
 
 ### Object-oriented
 

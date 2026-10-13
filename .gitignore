@@ -80,6 +80,8 @@ tests/*.out
 tests/*.php
 tests/*.sh
 !tests/configure-prefix.sh
+!tests/bundled-static.sh
+!tests/zts-valid-filesystems.sh
 tests/*.mem
 statgrab-*.tgz
 

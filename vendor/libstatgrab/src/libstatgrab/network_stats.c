@@ -1302,7 +1302,10 @@ skip:
 		err = ioctl(sock, SIOCETHTOOL, &ifr);
 		if (err == 0) {
 #ifdef HAVE_ETHTOOL_CMD_SPEED_HI
-			network_iface_stat[ifaces].speed = ethtool_cmd_speed(&ethcmd);
+			/* Open-coded ethtool_cmd_speed(): the kernel header shifts
+			 * speed_hi as a promoted int, which overflows for
+			 * SPEED_UNKNOWN (0xFFFF). */
+			network_iface_stat[ifaces].speed = ((__u32)ethcmd.speed_hi << 16) | ethcmd.speed;
 #else
 			switch(ethcmd.speed) {
 			case SPEED_10:

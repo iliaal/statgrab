@@ -3,7 +3,8 @@
 statgrab exposes libstatgrab's read-only host telemetry (CPU, memory,
 swap, disk I/O, filesystems, network interfaces, processes, users, and
 load) to PHP. The attack surface is deliberately thin: inputs are
-OS-sourced system counters, not attacker-controlled data. The only
+OS-sourced system counters, but some of them are controlled by other
+local users, notably process names and command lines. The only
 caller-supplied input path is `sg_set_valid_filesystems()` /
 `Statgrab::setValidFilesystems()`.
 
@@ -11,6 +12,7 @@ caller-supplied input path is `sg_set_valid_filesystems()` /
 
 | Version | Supported          |
 |---------|--------------------|
+| 2.3.x   | :white_check_mark: |
 | 2.2.x   | :white_check_mark: |
 
 The two most recent minor versions receive security fixes.
@@ -47,6 +49,10 @@ In scope:
   `Statgrab::setValidFilesystems()`, the single caller-tainted input:
   embedded-NUL handling, allocation overflow on large arrays, or a
   malformed filesystem-type string reaching native code.
+- Data races under a threaded (ZTS) SAPI, including races on
+  libstatgrab's process-wide state reached through the wrapper.
+- Resource exhaustion in the wrapper driven by values other local users
+  control, such as process names and command lines.
 - Arginfo / ZPP mismatches that cause undefined behavior reachable from
   PHP.
 - Information disclosure beyond what the calling process is already
@@ -57,8 +63,9 @@ Out of scope:
 
 - Vulnerabilities in libstatgrab itself. For system builds, report to
   the libstatgrab project and update your system package. The bundled
-  build statically links a pinned libstatgrab; a relevant upstream fix
-  ships here as a rebuild.
+  build statically links a pinned libstatgrab and carries local patches,
+  mostly upstream fixes that are not yet released (see
+  `vendor/libstatgrab/LOCAL_PATCHES.md`).
 - The telemetry values themselves. System counters reflecting real host
   state (process lists, logged-in users, interface stats) are the
   extension working as intended, not a leak. Restrict who can run the
