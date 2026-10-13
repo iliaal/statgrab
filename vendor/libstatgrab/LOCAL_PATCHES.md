@@ -41,3 +41,27 @@ After patch: zero leaks reported.
 
 Submitted upstream as a PR against `libstatgrab/libstatgrab` (link goes
 here once filed).
+
+### 0002-vector-size-compute-diff-bitmap-from-last-vector.patch (2026-10-13)
+
+`src/libstatgrab/vector.c` — `sg_vector_compute_diff()` sized its stack
+`matched[]` bitmap from `cur_vector->used_count` but indexes it with `j`
+over `last_vector->used_count`. When the item count shrinks across a
+32-item word boundary between two diff polls (a network interface or
+disk removed), `BIT_ISSET` reads and `BIT_SET` writes past the end of
+the stack VLA. Reachable from `sg_get_network_io_stats_diff()`,
+`sg_get_disk_io_stats_diff()`, and `sg_get_fs_stats_diff()`; in PHP,
+from `sg_network_stats_diff()` and `sg_diskio_stats_diff()`.
+
+Fix: size the bitmap from `last_vector->used_count`, the range `j`
+actually spans.
+
+Reproducer: `tests/c/diff-shrink.sh` serves 40 interfaces through a
+wrapped `/proc/net/dev`, then 5. Against an ASan build of the unpatched
+library it aborts with `dynamic-stack-buffer-overflow ... in
+sg_vector_compute_diff`; after the patch it reports the 5 surviving
+interfaces with correct deltas.
+
+Upstream: https://github.com/libstatgrab/libstatgrab/pull/148. Drop this
+patch once upstream merges it and statgrab re-vendors a release that
+includes it.
