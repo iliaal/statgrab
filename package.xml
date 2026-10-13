@@ -92,6 +92,12 @@ See CHANGELOG.md for the full list.
     <dir name="fixtures">
      <file name="named-rows.c" role="test" />
      <file name="named-rows.php" role="test" />
+     <file name="zts-driver.c" role="test" />
+     <file name="zts-fs.php" role="test" />
+     <file name="zts-list.php" role="test" />
+     <file name="zts-setter.php" role="test" />
+     <file name="zts-symmetric.php" role="test" />
+     <file name="zts-types.php" role="test" />
     </dir>
     <file name="001-load.phpt"            role="test" />
     <file name="002-host.phpt"            role="test" />
@@ -126,6 +132,7 @@ See CHANGELOG.md for the full list.
 <file name="031-process-arguments.phpt" role="test" />
 <file name="032-cpu-percent-finite.phpt" role="test" />
 <file name="033-process-session-id.phpt" role="test" />
+<file name="zts-valid-filesystems.sh" role="test" />
 <file name="configure-prefix.sh" role="test" />
    </dir>
   </dir>

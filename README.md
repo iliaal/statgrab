@@ -180,6 +180,16 @@ JSON-encodable; wait between samples to measure meaningful utilization.
 device/interface name; a duplicate name (multipath/LVM can repeat one)
 falls back to a numeric key instead of overwriting the earlier row.
 
+The valid-filesystems filter is process-wide in libstatgrab, not
+per-request. In NTS builds it persists across requests in long-lived
+workers such as FPM. Under a threaded (ZTS) SAPI,
+`sg_set_valid_filesystems()` in one request also changes the
+`sg_fs_stats()` filter for every other thread. The extension serializes
+`sg_fs_stats()`, `sg_valid_filesystems()`, and `sg_set_valid_filesystems()`
+(and their `Statgrab` methods) across threads so concurrent calls are
+memory-safe. A hung mount that blocks `sg_fs_stats()` therefore stalls all
+of these calls in every thread.
+
 ### Object-oriented
 
 ```php

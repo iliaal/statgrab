@@ -27,6 +27,20 @@
 
 static int sg_initialized = 0;
 
+/* libstatgrab keeps the valid-filesystems list in an unlocked process-global
+ * that sg_set_valid_filesystems() frees and replaces, while
+ * sg_get_fs_stats() reads it and sg_get_valid_filesystems() returns it
+ * live. Serialize every call that touches it. The locked regions make no
+ * Zend calls, so a bailout cannot leave the mutex held. */
+#ifdef ZTS
+static MUTEX_T php_sg_fs_mutex = NULL;
+# define PHP_SG_FS_LOCK()   tsrm_mutex_lock(php_sg_fs_mutex)
+# define PHP_SG_FS_UNLOCK() tsrm_mutex_unlock(php_sg_fs_mutex)
+#else
+# define PHP_SG_FS_LOCK()
+# define PHP_SG_FS_UNLOCK()
+#endif
+
 static void php_sg_emit_error(void)
 {
 	sg_error code = sg_get_error();
@@ -186,7 +200,13 @@ static void php_sg_diskio(zval *return_value, int diff)
 static void php_sg_fs(zval *return_value)
 {
 	size_t entries = 0;
+
+	/* libstatgrab checks each mount against the list between statvfs()
+	 * calls, so the whole walk runs under the lock. The returned vector is
+	 * thread-local and safe to read after unlocking. */
+	PHP_SG_FS_LOCK();
 	sg_fs_stats *fs = sg_get_fs_stats(&entries);
+	PHP_SG_FS_UNLOCK();
 
 	if (fs == NULL) {
 		php_sg_emit_error();
@@ -519,21 +539,61 @@ static void php_sg_users(zval *return_value)
 
 static void php_sg_valid_filesystems(zval *return_value)
 {
-	size_t entries = 0;
+	size_t entries = 0, count = 0, bytes = 0;
+	char **copy = NULL;
+	int alloc_failed = 0;
+
+	/* Copy into one malloc'd block so no library-owned pointer outlives
+	 * the lock; emalloc here could bail out with the mutex held. */
+	PHP_SG_FS_LOCK();
 	const char **fs = sg_get_valid_filesystems(&entries);
-
-	if (fs == NULL) {
-		php_sg_emit_error();
-		RETVAL_FALSE;
-		return;
-	}
-
-	array_init(return_value);
-	for (size_t i = 0; i < entries; i++) {
-		if (fs[i]) {
-			add_next_index_string(return_value, fs[i]);
+	if (fs != NULL) {
+		for (size_t i = 0; i < entries; i++) {
+			if (fs[i]) {
+				count++;
+				bytes += strlen(fs[i]) + 1;
+			}
+		}
+		copy = malloc((count + 1) * sizeof(char *) + bytes);
+		if (copy == NULL) {
+			alloc_failed = 1;
+		} else {
+			char *p = (char *)(copy + count + 1);
+			size_t n = 0;
+			for (size_t i = 0; i < entries; i++) {
+				if (fs[i]) {
+					size_t len = strlen(fs[i]) + 1;
+					memcpy(p, fs[i], len);
+					copy[n++] = p;
+					p += len;
+				}
+			}
+			copy[n] = NULL;
 		}
 	}
+	PHP_SG_FS_UNLOCK();
+
+	if (alloc_failed) {
+		php_error_docref(NULL, E_WARNING,
+			"unable to copy the valid filesystems list: out of memory");
+		RETURN_FALSE;
+	}
+	if (copy == NULL) {
+		php_sg_emit_error();
+		RETURN_FALSE;
+	}
+
+	/* A memory_limit bailout must not leak the malloc'd copy. */
+	zend_try {
+		array_init_size(return_value, (uint32_t)count);
+		for (char **p = copy; *p; p++) {
+			add_next_index_string(return_value, *p);
+		}
+	} zend_catch {
+		free(copy);
+		zend_bailout();
+	} zend_end_try();
+	free(copy);
 }
 
 static void php_sg_set_valid_filesystems(zval *return_value, zval *zfs)
@@ -572,9 +632,9 @@ static void php_sg_set_valid_filesystems(zval *return_value, zval *zfs)
 	} ZEND_HASH_FOREACH_END();
 	buf[i] = NULL;
 
-	/* Upstream must lock disk_stats.c: this global swap races with
-	 * sg_get_fs_stats under ZTS and cannot be fixed at this layer. */
+	PHP_SG_FS_LOCK();
 	sg_error rc = sg_set_valid_filesystems(buf);
+	PHP_SG_FS_UNLOCK();
 	efree(buf);
 
 	if (rc != SG_ERROR_NONE) {
@@ -762,6 +822,13 @@ PHP_METHOD(Statgrab, processes)
 
 PHP_MINIT_FUNCTION(statgrab)
 {
+#ifdef ZTS
+	php_sg_fs_mutex = tsrm_mutex_alloc();
+	if (php_sg_fs_mutex == NULL) {
+		return FAILURE;
+	}
+#endif
+
 	if (sg_init(1) == SG_ERROR_NONE) {
 		sg_initialized = 1;
 
@@ -820,6 +887,12 @@ PHP_MSHUTDOWN_FUNCTION(statgrab)
 		sg_shutdown();
 		sg_initialized = 0;
 	}
+#ifdef ZTS
+	if (php_sg_fs_mutex) {
+		tsrm_mutex_free(php_sg_fs_mutex);
+		php_sg_fs_mutex = NULL;
+	}
+#endif
 	return SUCCESS;
 }
 
