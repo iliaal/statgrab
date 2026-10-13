@@ -180,6 +180,15 @@ JSON-encodable; wait between samples to measure meaningful utilization.
 device/interface name; a duplicate name (multipath/LVM can repeat one)
 falls back to a numeric key instead of overwriting the earlier row.
 
+`proc_title` from `sg_process_stats()` / `processes()` holds at most 4096
+bytes of each process's command line. Any local user controls their own
+argv, so the cap keeps a few huge command lines from exhausting
+`memory_limit`. libstatgrab still reads each full command line into the
+C heap while it collects the list, so that memory is used transiently
+outside `memory_limit`. When the cut lands inside a UTF-8 sequence, the
+title ends before that sequence, so a truncated title can be up to 3 bytes
+shorter.
+
 The valid-filesystems filter is process-wide in libstatgrab, not
 per-request. In NTS builds it persists across requests in long-lived
 workers such as FPM. Under a threaded (ZTS) SAPI,

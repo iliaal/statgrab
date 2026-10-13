@@ -132,6 +132,7 @@ See CHANGELOG.md for the full list.
 <file name="031-process-arguments.phpt" role="test" />
 <file name="032-cpu-percent-finite.phpt" role="test" />
 <file name="033-process-session-id.phpt" role="test" />
+<file name="034-process-title-cap.phpt" role="test" />
 <file name="zts-valid-filesystems.sh" role="test" />
 <file name="configure-prefix.sh" role="test" />
    </dir>

@@ -41,6 +41,10 @@ static MUTEX_T php_sg_fs_mutex = NULL;
 # define PHP_SG_FS_UNLOCK()
 #endif
 
+/* Any local user controls their own argv, which libstatgrab reads in full,
+ * so cap each proc_title copied into PHP memory. */
+#define PHP_SG_PROC_TITLE_MAX 4096
+
 static void php_sg_emit_error(void)
 {
 	sg_error code = sg_get_error();
@@ -417,6 +421,26 @@ static void php_sg_process_count(zval *return_value)
 	PHP_SG_ADD_LONG(return_value, "systime",  pc->systime);
 }
 
+static void php_sg_add_proc_title(zval *row, const char *title)
+{
+	size_t len = 0;
+
+	if (title) {
+		len = strnlen(title, PHP_SG_PROC_TITLE_MAX + 1);
+		if (len > PHP_SG_PROC_TITLE_MAX) {
+			len = PHP_SG_PROC_TITLE_MAX;
+			/* Step back over at most three UTF-8 continuation bytes so the
+			 * cut does not split a multibyte sequence. */
+			for (int i = 0; i < 3 && len > 0
+					&& ((unsigned char)title[len] & 0xC0) == 0x80; i++) {
+				len--;
+			}
+		}
+	}
+	add_assoc_stringl_ex(row, "proc_title", sizeof("proc_title") - 1,
+		title ? title : "", len);
+}
+
 static void php_sg_process_stats_impl(zval *return_value, zend_long sort_order, zend_long num_entries, int sort_given)
 {
 	/* Reject invalid arguments before collecting or sorting process stats. */
@@ -478,7 +502,7 @@ static void php_sg_process_stats_impl(zval *return_value, zend_long sort_order, 
 		/* Reserve all fields up front to avoid growing each process record. */
 		array_init_size(&row, 21);
 		PHP_SG_ADD_STRING_OR_EMPTY(&row, "process_name", ps[i].process_name);
-		PHP_SG_ADD_STRING_OR_EMPTY(&row, "proc_title",   ps[i].proctitle);
+		php_sg_add_proc_title(&row, ps[i].proctitle);
 		PHP_SG_ADD_LONG(&row, "pid",         ps[i].pid);
 		PHP_SG_ADD_LONG(&row, "parent_pid",  ps[i].parent);
 		PHP_SG_ADD_LONG(&row, "leader_pid",  ps[i].pgid);
