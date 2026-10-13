@@ -441,6 +441,51 @@ static void php_sg_add_proc_title(zval *row, const char *title)
 		title ? title : "", len);
 }
 
+static void php_sg_build_process_rows(zval *return_value, const sg_process_stats *ps, zend_long limit)
+{
+	array_init(return_value);
+	for (zend_long i = 0; i < limit; i++) {
+		zval row;
+		/* Reserve all fields up front to avoid growing each process record. */
+		array_init_size(&row, 21);
+		PHP_SG_ADD_STRING_OR_EMPTY(&row, "process_name", ps[i].process_name);
+		php_sg_add_proc_title(&row, ps[i].proctitle);
+		PHP_SG_ADD_LONG(&row, "pid",         ps[i].pid);
+		PHP_SG_ADD_LONG(&row, "parent_pid",  ps[i].parent);
+		PHP_SG_ADD_LONG(&row, "leader_pid",  ps[i].pgid);
+		PHP_SG_ADD_LONG(&row, "session_id",  ps[i].sessid);
+		PHP_SG_ADD_LONG(&row, "uid",         ps[i].uid);
+		PHP_SG_ADD_LONG(&row, "gid",         ps[i].gid);
+		PHP_SG_ADD_LONG(&row, "euid",        ps[i].euid);
+		PHP_SG_ADD_LONG(&row, "egid",        ps[i].egid);
+		PHP_SG_ADD_LONG(&row, "size",                         ps[i].proc_size);
+		PHP_SG_ADD_LONG(&row, "size_in_mem",                  ps[i].proc_resident);
+		PHP_SG_ADD_LONG(&row, "start_time",                   ps[i].start_time);
+		PHP_SG_ADD_LONG(&row, "time_spent",                   ps[i].time_spent);
+		PHP_SG_ADD_DOUBLE(&row, "cpu_percent",                ps[i].cpu_percent);
+		PHP_SG_ADD_LONG(&row, "nice",                         ps[i].nice);
+		PHP_SG_ADD_LONG(&row, "state",                        ps[i].state);
+		PHP_SG_ADD_LONG(&row, "context_switches",             ps[i].context_switches);
+		PHP_SG_ADD_LONG(&row, "voluntary_context_switches",   ps[i].voluntary_context_switches);
+		PHP_SG_ADD_LONG(&row, "involuntary_context_switches", ps[i].involuntary_context_switches);
+		PHP_SG_ADD_LONG(&row, "systime",                      ps[i].systime);
+		add_next_index_zval(return_value, &row);
+	}
+}
+
+/* Takes ownership of ps, which is libc heap: a memory_limit bailout while
+ * building rows must not leak it. */
+static void php_sg_add_process_rows(zval *return_value, sg_process_stats *ps, zend_long limit)
+{
+	zend_try {
+		php_sg_build_process_rows(return_value, ps, limit);
+	} zend_catch {
+		sg_free_stats_buf(ps);
+		zend_bailout();
+	} zend_end_try();
+	sg_free_stats_buf(ps);
+}
+
 static void php_sg_process_stats_impl(zval *return_value, zend_long sort_order, zend_long num_entries, int sort_given)
 {
 	/* Reject invalid arguments before collecting or sorting process stats. */
@@ -496,35 +541,7 @@ static void php_sg_process_stats_impl(zval *return_value, zend_long sort_order, 
 		limit = (zend_long)entries;
 	}
 
-	array_init(return_value);
-	for (zend_long i = 0; i < limit; i++) {
-		zval row;
-		/* Reserve all fields up front to avoid growing each process record. */
-		array_init_size(&row, 21);
-		PHP_SG_ADD_STRING_OR_EMPTY(&row, "process_name", ps[i].process_name);
-		php_sg_add_proc_title(&row, ps[i].proctitle);
-		PHP_SG_ADD_LONG(&row, "pid",         ps[i].pid);
-		PHP_SG_ADD_LONG(&row, "parent_pid",  ps[i].parent);
-		PHP_SG_ADD_LONG(&row, "leader_pid",  ps[i].pgid);
-		PHP_SG_ADD_LONG(&row, "session_id",  ps[i].sessid);
-		PHP_SG_ADD_LONG(&row, "uid",         ps[i].uid);
-		PHP_SG_ADD_LONG(&row, "gid",         ps[i].gid);
-		PHP_SG_ADD_LONG(&row, "euid",        ps[i].euid);
-		PHP_SG_ADD_LONG(&row, "egid",        ps[i].egid);
-		PHP_SG_ADD_LONG(&row, "size",                         ps[i].proc_size);
-		PHP_SG_ADD_LONG(&row, "size_in_mem",                  ps[i].proc_resident);
-		PHP_SG_ADD_LONG(&row, "start_time",                   ps[i].start_time);
-		PHP_SG_ADD_LONG(&row, "time_spent",                   ps[i].time_spent);
-		PHP_SG_ADD_DOUBLE(&row, "cpu_percent",                ps[i].cpu_percent);
-		PHP_SG_ADD_LONG(&row, "nice",                         ps[i].nice);
-		PHP_SG_ADD_LONG(&row, "state",                        ps[i].state);
-		PHP_SG_ADD_LONG(&row, "context_switches",             ps[i].context_switches);
-		PHP_SG_ADD_LONG(&row, "voluntary_context_switches",   ps[i].voluntary_context_switches);
-		PHP_SG_ADD_LONG(&row, "involuntary_context_switches", ps[i].involuntary_context_switches);
-		PHP_SG_ADD_LONG(&row, "systime",                      ps[i].systime);
-		add_next_index_zval(return_value, &row);
-	}
-	sg_free_stats_buf(ps);
+	php_sg_add_process_rows(return_value, ps, limit);
 }
 
 static void php_sg_users(zval *return_value)
@@ -559,6 +576,27 @@ static void php_sg_users(zval *return_value)
 
 		add_next_index_zval(return_value, &row);
 	}
+}
+
+static void php_sg_build_string_list(zval *return_value, char **list, size_t count)
+{
+	array_init_size(return_value, (uint32_t)count);
+	for (char **p = list; *p; p++) {
+		add_next_index_string(return_value, *p);
+	}
+}
+
+/* Takes ownership of list, a single malloc'd block: a memory_limit bailout
+ * must not leak it. */
+static void php_sg_add_string_list(zval *return_value, char **list, size_t count)
+{
+	zend_try {
+		php_sg_build_string_list(return_value, list, count);
+	} zend_catch {
+		free(list);
+		zend_bailout();
+	} zend_end_try();
+	free(list);
 }
 
 static void php_sg_valid_filesystems(zval *return_value)
@@ -607,17 +645,7 @@ static void php_sg_valid_filesystems(zval *return_value)
 		RETURN_FALSE;
 	}
 
-	/* A memory_limit bailout must not leak the malloc'd copy. */
-	zend_try {
-		array_init_size(return_value, (uint32_t)count);
-		for (char **p = copy; *p; p++) {
-			add_next_index_string(return_value, *p);
-		}
-	} zend_catch {
-		free(copy);
-		zend_bailout();
-	} zend_end_try();
-	free(copy);
+	php_sg_add_string_list(return_value, copy, count);
 }
 
 static void php_sg_set_valid_filesystems(zval *return_value, zval *zfs)
