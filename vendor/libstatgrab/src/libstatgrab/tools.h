@@ -562,11 +562,11 @@ __sg_private void *sg_realloc(void *ptr, size_t size);
 #define BITS_PER_ITEM(vect) \
 	(8*sizeof((vect)[0]))
 #define BIT_SET(vect,bit) \
-	(vect)[ (bit) / BITS_PER_ITEM(vect) ] |= ( 1 << ( (bit) % BITS_PER_ITEM(vect) ) )
+	(vect)[ (bit) / BITS_PER_ITEM(vect) ] |= ( 1u << ( (bit) % BITS_PER_ITEM(vect) ) )
 #define BIT_ISSET(vect,bit) \
-	( 0 != ( (vect)[ (bit) / BITS_PER_ITEM(vect) ] & ( 1 << ( (bit) % BITS_PER_ITEM(vect) ) ) ) )
+	( 0 != ( (vect)[ (bit) / BITS_PER_ITEM(vect) ] & ( 1u << ( (bit) % BITS_PER_ITEM(vect) ) ) ) )
 #define BIT_GET(vect,bit) \
-	( ( (vect)[ (bit) / BITS_PER_ITEM(vect) ] & ( 1 << ( (bit) % BITS_PER_ITEM(vect) ) ) ) >> ( (bit) % BITS_PER_ITEM(vect) ) )
+	( ( (vect)[ (bit) / BITS_PER_ITEM(vect) ] & ( 1u << ( (bit) % BITS_PER_ITEM(vect) ) ) ) >> ( (bit) % BITS_PER_ITEM(vect) ) )
 #define BIT_SCAN_FWD(vect,bit) \
 	while( 0 == BIT_ISSET(vect,bit) ) ++(bit)
 

@@ -86,3 +86,26 @@ on a normal build.
 Upstream: https://github.com/libstatgrab/libstatgrab/pull/147. Drop this
 patch once upstream merges it and statgrab re-vendors a release that
 includes it.
+
+### 0004-unsigned-bit-and-ethtool-speed-shifts.patch (2026-10-13)
+
+`src/libstatgrab/tools.h` — `BIT_SET`, `BIT_ISSET`, and `BIT_GET`
+shifted a signed `1`, so bit 31 of each `unsigned` word evaluated
+`1 << 31`, which overflows `int`. Every caller uses `unsigned` arrays,
+so `1u` keeps the same bit layout. Hit by `sg_get_fs_stats()` on hosts
+with 32 or more mounts and by the diff getters with 32 or more items.
+
+`src/libstatgrab/network_stats.c` — the Linux interface-speed path
+called `ethtool_cmd_speed()` from `<linux/ethtool.h>`, which shifts the
+16-bit `speed_hi` after promotion to `int`. For `SPEED_UNKNOWN`
+(`0xFFFF`) the shift overflows. The speed is now computed in place
+with `speed_hi` cast to `__u32` first, giving the same value.
+
+Reproducer: build the bundled library and extension with
+`-fsanitize=address,undefined` and run the PHPT suite with
+`UBSAN_OPTIONS=halt_on_error=1`. Before the patch, `009-fs`,
+`011-iface`, `016-oo-class`, and `023-tier-c-constants` abort with
+`left shift of 1 by 31 places` (`disk_stats.c`) or `left shift of 65535
+by 16 places` (`ethtool.h`); after it they pass.
+
+Local only; not submitted upstream.
