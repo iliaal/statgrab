@@ -44,10 +44,10 @@ Requires libstatgrab >= 0.92 and PHP >= 8.0 (NTS or ZTS).
   <email>ilia@ilia.ws</email>
   <active>yes</active>
  </lead>
- <date>2026-09-03</date>
+ <date>2026-10-13</date>
  <version>
-  <release>2.2.2</release>
-  <api>2.2.2</api>
+  <release>2.3.0</release>
+  <api>2.3.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -55,22 +55,20 @@ Requires libstatgrab >= 0.92 and PHP >= 8.0 (NTS or ZTS).
  </stability>
  <license uri="http://www.php.net/license">PHP License 3.01</license>
  <notes>
-Correctness fixes for error constants, result keys, and process stats.
+Thread-safety and bundled-library hardening.
 
-- Statgrab::ERROR_UNSUPPORTED is 44, matching libstatgrab's sg_error
-  enum (was 41, SG_ERROR_MACHCALL).
-- Duplicate device or interface names in diskio, network, and iface
-  results no longer overwrite earlier rows; collisions use numeric keys.
-- sg_error_details() returns the code/errno/message/arg array when a
-  libstatgrab error is pending (it always returned false).
-- sg_process_stats() sorts a caller-owned copy instead of libstatgrab's
-  shared vector, and a negative limit throws ValueError (0 means all).
-- Cold sg_cpu_percent_usage() diff-source calls return the first sample
-  row instead of false with a misleading warning.
-- Statgrab::cpu() reflection shows Statgrab::CPU_PERCENT_ENTIRE as the
-  default.
-- A failed initial sg_snapshot() at startup emits a notice naming the
-  libstatgrab error.
+- Under ZTS, sg_fs_stats(), sg_valid_filesystems(), and
+  sg_set_valid_filesystems() are serialized across threads; concurrent
+  calls could use freed memory in libstatgrab's process-wide list.
+- Bundled libstatgrab carries upstream fixes for a stack overflow in the
+  network and disk diff getters (libstatgrab#148) and uninitialised
+  session_id values on Linux (libstatgrab#147), plus two undefined-shift
+  fixes.
+- proc_title in sg_process_stats() rows is capped at 4096 bytes.
+- A bundled build no longer silently links the system libstatgrab after
+  make clean.
+- A memory_limit error while building process or filesystem arrays no
+  longer leaks libstatgrab's result buffer.
 
 See CHANGELOG.md for the full list.
  </notes>

@@ -6,6 +6,8 @@ this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-10-13
+
 ### Changed
 
 - `proc_title` in `sg_process_stats()` rows is now capped at 4096 bytes, cut on a UTF-8 boundary, so processes run by other local users with very large argument lists can no longer exhaust `memory_limit`.
@@ -96,7 +98,8 @@ this project adheres to [Semantic Versioning](https://semver.org).
   `.release-config` and CI for safety against system libstatgrab
   shipping the unpatched library.
 
-[Unreleased]: https://github.com/iliaal/statgrab/compare/2.2.2...HEAD
+[Unreleased]: https://github.com/iliaal/statgrab/compare/2.3.0...HEAD
+[2.3.0]: https://github.com/iliaal/statgrab/releases/tag/2.3.0
 [2.2.2]: https://github.com/iliaal/statgrab/releases/tag/2.2.2
 [2.2.1]: https://github.com/iliaal/statgrab/releases/tag/2.2.1
 [2.2.0]: https://github.com/iliaal/statgrab/releases/tag/2.2.0
