@@ -6,6 +6,8 @@ this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-10-14
+
 ### Security
 
 - Bundled libstatgrab: a process whose command line starts with crafted bytes could make `sg_process_stats()` and `sg_process_count()` (and `Statgrab::processes()` / `Statgrab::processCount()`) read and write past a heap buffer on Linux. Carried as a local patch from libstatgrab/libstatgrab#146.
@@ -102,7 +104,8 @@ this project adheres to [Semantic Versioning](https://semver.org).
   `.release-config` and CI for safety against system libstatgrab
   shipping the unpatched library.
 
-[Unreleased]: https://github.com/iliaal/statgrab/compare/2.3.0...HEAD
+[Unreleased]: https://github.com/iliaal/statgrab/compare/2.3.1...HEAD
+[2.3.1]: https://github.com/iliaal/statgrab/releases/tag/2.3.1
 [2.3.0]: https://github.com/iliaal/statgrab/releases/tag/2.3.0
 [2.2.2]: https://github.com/iliaal/statgrab/releases/tag/2.2.2
 [2.2.1]: https://github.com/iliaal/statgrab/releases/tag/2.2.1

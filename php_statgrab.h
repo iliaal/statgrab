@@ -14,7 +14,7 @@
 #ifndef PHP_STATGRAB_H
 #define PHP_STATGRAB_H
 
-#define PHP_STATGRAB_VERSION "2.3.0"
+#define PHP_STATGRAB_VERSION "2.3.1"
 
 extern zend_module_entry statgrab_module_entry;
 #define phpext_statgrab_ptr &statgrab_module_entry

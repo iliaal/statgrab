@@ -45,10 +45,10 @@ Requires libstatgrab >= 0.92 and PHP >= 8.0 (NTS or ZTS).
   <email>ilia@ilia.ws</email>
   <active>yes</active>
  </lead>
- <date>2026-10-13</date>
+ <date>2026-10-14</date>
  <version>
-  <release>2.3.0</release>
-  <api>2.3.0</api>
+  <release>2.3.1</release>
+  <api>2.3.1</api>
  </version>
  <stability>
   <release>stable</release>
@@ -56,20 +56,12 @@ Requires libstatgrab >= 0.92 and PHP >= 8.0 (NTS or ZTS).
  </stability>
  <license uri="http://www.php.net/license">PHP License 3.01</license>
  <notes>
-Thread-safety and bundled-library hardening.
+Bundled libstatgrab security fix.
 
-- Under ZTS, sg_fs_stats(), sg_valid_filesystems(), and
-  sg_set_valid_filesystems() are serialized across threads; concurrent
-  calls could use freed memory in libstatgrab's process-wide list.
-- Bundled libstatgrab carries upstream fixes for a stack overflow in the
-  network and disk diff getters (libstatgrab#148) and uninitialised
-  session_id values on Linux (libstatgrab#147), plus two undefined-shift
-  fixes.
-- proc_title in sg_process_stats() rows is capped at 4096 bytes.
-- A bundled build no longer silently links the system libstatgrab after
-  make clean.
-- A memory_limit error while building process or filesystem arrays no
-  longer leaks libstatgrab's result buffer.
+- On Linux, a process whose command line starts with crafted bytes
+  could make sg_process_stats() and sg_process_count() read and write
+  past a heap buffer. The bundled copy now carries the upstream fix
+  from libstatgrab#146.
 
 See CHANGELOG.md for the full list.
  </notes>
