@@ -82,9 +82,10 @@ to a path probe (`/usr` and `/usr/local`). Pass
 The repo carries a vendored copy of libstatgrab 0.92.1 under
 `vendor/libstatgrab/` with local patches (see
 `vendor/libstatgrab/LOCAL_PATCHES.md`) for a process-exit leak, a stack
-buffer overflow in the diff getters, and uninitialised process session
-IDs, which upstream has not released yet, plus a local fix for two
-undefined shifts. A Git checkout does not include the generated
+buffer overflow in the diff getters, uninitialised process session IDs,
+and a heap buffer overflow when parsing Linux process command lines,
+which upstream has not released yet, plus a local fix for two undefined
+shifts. A Git checkout does not include the generated
 libstatgrab `configure` script, so generate it with `autoreconf` first.
 This requires Autoconf, Automake, and Libtool in addition to the usual
 C compiler, Make, and PHP development tools (on Debian/Ubuntu, install
