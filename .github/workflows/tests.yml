@@ -187,7 +187,7 @@ jobs:
           ./configure --enable-static --disable-shared --without-ncurses --with-pic
           make -j$(nproc)
 
-      - name: Test diff getters against an instrumented libstatgrab copy
+      - name: Run C regression tests against an instrumented libstatgrab copy
         run: |
           cd /tmp/libstatgrab-asan
           CFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer" \
@@ -196,6 +196,7 @@ jobs:
           make -j"$(nproc)"
           cd "$GITHUB_WORKSPACE"
           LIBSTATGRAB_DIR=/tmp/libstatgrab-asan sh tests/c/diff-shrink.sh
+          LIBSTATGRAB_DIR=/tmp/libstatgrab-asan sh tests/c/cmdline-title.sh
 
       - name: Build extension against bundled libstatgrab
         env:
