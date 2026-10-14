@@ -31,7 +31,7 @@ statgrab calls libstatgrab in-process. libstatgrab handles the per-OS path (Linu
 |---|---|
 | Cross-platform | glibc Linux, musl, macOS, FreeBSD |
 | Procedural + OO API | 2006 `sg_*` function names preserved; modern `Statgrab` class on top |
-| Bundled libstatgrab option | Vendored 0.92.1 with a leak-fix patch; resulting `.so` has no runtime dependency on `libstatgrab.so` |
+| Bundled libstatgrab option | Vendored 0.92.1 with local patches (see `vendor/libstatgrab/LOCAL_PATCHES.md`); resulting `.so` has no runtime dependency on `libstatgrab.so` |
 | Modern types | Counters returned as 64-bit `int`, not stringified numbers |
 | Modern PHP errors | `E_WARNING` on library failure, `ArgumentCountError` for arg-count violations |
 | BC-preserved 2006 names | Drop-in for callers of the original PECL extension, except the 2.0 BC breaks listed below |
