@@ -113,3 +113,36 @@ Reproducer: build the bundled library and extension with
 by 16 places` (`ethtool.h`); after it they pass.
 
 Local only; not submitted upstream.
+
+### 0005-process-stats-linux-cmdline-no-pointer.patch (2026-10-14)
+
+`src/libstatgrab/process_stats.c` — on Linux, `sg_get_process_stats()`
+reads `/proc/PID/cmdline` into a heap buffer of `len + 1` bytes and
+passes it to `adjust_procname_cmndline()`, which took the first
+`sizeof(char *)` bytes of the buffer as a pointer. That is OpenBSD's
+`kern.proc.args` layout, which prepends a `char *[]` table; a Linux
+cmdline is only the NUL-separated argv strings, so those bytes belong to
+the monitored process. When they equal the address `buffer + len`, the
+range check passes and sets `len` to 0, which turns the rewrite loop's
+`|| !len` arm on and drops its bound: the loop reads past the buffer,
+turns NUL bytes in the adjacent heap memory into spaces, and writes a
+final NUL wherever it stops. For an ordinary cmdline the decoded value
+fails the check, so the walk already started at the buffer and the fix
+leaves its titles unchanged.
+
+Fix: on Linux, start the walk at the buffer. For the other
+`KERN_PROC_ARGS`/AIX backends that still decode the pointer, the check
+now also rejects values below the buffer and the exact end of it.
+
+Reproducer: `tests/c/cmdline-title.sh` serves this process's own
+`/proc/PID/cmdline` through `--wrap=open`, and `--wrap=sg_realloc`
+hands libstatgrab a buffer allocated in advance, so the leading
+pointer-sized bytes can name its end. Against an ASan+UBSan build with this patch
+reverted it stops with `AddressSanitizer: heap-buffer-overflow` (`READ
+of size 1` in `adjust_procname_cmndline`, `process_stats.c:280`); with
+the patch the title stays inside the buffer and an ordinary argv still
+reads `statgrab-cmdline --flag`.
+
+Upstream: https://github.com/libstatgrab/libstatgrab/pull/146. Drop this
+patch once upstream merges it and statgrab re-vendors a release that
+includes it.
