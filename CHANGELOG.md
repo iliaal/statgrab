@@ -6,6 +6,10 @@ this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+### Fixed
+
+- Under ZTS, request threads other than the module-loading thread could segfault (SIGSEGV) on the first `EG()` read — e.g. the `ValueError` thrown by `sg_set_valid_filesystems([])` — because the extension defined its TSRM cache but never updated it. `ZEND_TSRMLS_CACHE_UPDATE()` now runs in `PHP_RINIT_FUNCTION`, registered in the module entry.
+
 ## [2.3.1] - 2026-10-14
 
 ### Security

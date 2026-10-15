@@ -948,6 +948,23 @@ PHP_MSHUTDOWN_FUNCTION(statgrab)
 	return SUCCESS;
 }
 
+/* Under ZTS the TU-local TSRMLS cache (TSRMG_FAST_STATIC) is NULL on every
+ * thread where ZEND_TSRMLS_CACHE_UPDATE() never ran, and the engine never
+ * updates an extension's cache itself. GINIT/MINIT run only on the
+ * module-loading thread, so the first EG() read on any other request thread
+ * (e.g. the ValueError thrown by sg_set_valid_filesystems([])) would
+ * dereference NULL. Running the update in RINIT keeps EG() reads safe on
+ * every request thread (e.g. FrankenPHP embed, threaded php-fpm).
+ * Idempotent: on NTS the macro is a no-op and the guard keeps the update
+ * compiled out anyway. */
+PHP_RINIT_FUNCTION(statgrab)
+{
+#if defined(COMPILE_DL_STATGRAB) && defined(ZTS)
+	ZEND_TSRMLS_CACHE_UPDATE();
+#endif
+	return SUCCESS;
+}
+
 PHP_MINFO_FUNCTION(statgrab)
 {
 	php_info_print_table_start();
@@ -963,7 +980,7 @@ zend_module_entry statgrab_module_entry = {
 	ext_functions,
 	PHP_MINIT(statgrab),
 	PHP_MSHUTDOWN(statgrab),
-	NULL,
+	PHP_RINIT(statgrab),
 	NULL,
 	PHP_MINFO(statgrab),
 	PHP_STATGRAB_VERSION,
