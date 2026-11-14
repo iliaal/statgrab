@@ -17,7 +17,9 @@ if test ! -r "$lib/.libs/libstatgrab.a" || test ! -r "$lib/statgrab.h"; then
     echo "FAIL: no built libstatgrab under $lib (see vendor/libstatgrab/LOCAL_PATCHES.md)" >&2
     exit 1
 fi
-if ! nm "$lib/.libs/libstatgrab.a" 2>/dev/null | grep -q __asan_report; then
+# Reject failed/partial inspection before checking instrumentation.
+symbols=$(nm "$lib/.libs/libstatgrab.a")
+if ! printf '%s\n' "$symbols" | grep __asan_report >/dev/null; then
     echo "FAIL: $lib/.libs/libstatgrab.a is not ASan-instrumented; rebuild it with" >&2
     echo '  CFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer" LDFLAGS="-fsanitize=address,undefined"' >&2
     exit 1

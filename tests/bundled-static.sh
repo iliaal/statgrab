@@ -18,7 +18,9 @@ if printf '%s\n' "$deps" | grep -i libstatgrab >/dev/null; then
 fi
 echo 'PASS: no shared libstatgrab dependency'
 
-if ! nm -D --defined-only "$so" | grep -w sg_init >/dev/null; then
+# Check the producer status before matching: partial nm output is not proof.
+symbols=$(nm -D --defined-only "$so")
+if ! printf '%s\n' "$symbols" | grep -w sg_init >/dev/null; then
     echo "FAIL: $so does not define sg_init; bundled libstatgrab not linked in" >&2
     exit 1
 fi
