@@ -33,12 +33,21 @@ foreach ($modes as $mode => $key) {
     echo ($asc || $desc) ? "sorted_$mode\n" : "FAIL sort $mode not sorted\n";
 }
 
-/* Allow fork/exit churn between live process counts. */
-$full = sg_process_stats();
+/* Processes start and exit between calls, so counts never compare reliably.
+ * A PID present in both bracketing snapshots was alive during the limit-0
+ * call, so limit 0 must return every one of them. */
+$before = sg_process_stats();
 $zero = sg_process_stats(SG_PS_SORT_PID, 0);
-$fc = is_array($full) ? count($full) : -1;
-$zc = is_array($zero) ? count($zero) : -1;
-echo ($fc >= 0 && abs($zc - $fc) <= 2) ? "limit_0_full\n" : "FAIL limit_0 got $zc want $fc\n";
+$after = sg_process_stats();
+if (!is_array($before) || !is_array($zero) || !is_array($after)) {
+    echo "FAIL limit_0 not array\n";
+} else {
+    $stable = array_intersect(array_column($before, 'pid'), array_column($after, 'pid'));
+    $missing = array_diff($stable, array_column($zero, 'pid'));
+    echo (count($stable) > 1 && !$missing)
+        ? "limit_0_full\n"
+        : "FAIL limit_0 missing " . count($missing) . " of " . count($stable) . "\n";
+}
 
 /* Explicit null sort: warning-free unsuppressed call returning an array. */
 $nosort = sg_process_stats(null);
