@@ -34,7 +34,9 @@ trap 'rm -rf "$work"' EXIT HUP INT TERM
 libdir=$("$php_config" --prefix)/lib
 
 san=
-if nm -D --undefined-only "$libdir/libphp.so" | grep __asan_init >/dev/null; then
+# A failed symbol inspection must not masquerade as an ASan/no-ASan result.
+symbols=$(nm -D --undefined-only "$libdir/libphp.so")
+if printf '%s\n' "$symbols" | grep __asan_init >/dev/null; then
     san='-fsanitize=address,undefined -fno-omit-frame-pointer'
 else
     echo "WARNING: $libdir/libphp.so has no ASan runtime; races may pass undetected" >&2
