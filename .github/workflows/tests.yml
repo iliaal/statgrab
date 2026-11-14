@@ -27,6 +27,8 @@ jobs:
           tools: composer
           coverage: none
       - run: composer validate --strict
+      - name: Test symbol-inspection failure handling
+        run: python3 tests/symbol-inspection-test.py
 
   pie-smoke:
     name: PIE install smoke
