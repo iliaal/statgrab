@@ -237,9 +237,12 @@ class GuardTest(unittest.TestCase):
         self.f.pr(1, None, labels=("changelog-override",))
         result = self.f.run("pr", 1)
         self.assertPass(result)
-        self.assertIn("::warning", result.stdout)
-        self.assertIn("changes released section [1.0.0]", result.stdout)
-        self.assertIn("allowed by the changelog-override label", result.stdout)
+        self.assertTrue(any(
+            line.startswith("::warning title=changelog-guard::")
+            and "changes released section [1.0.0]" in line
+            and "`- First release`" in line
+            and "(allowed by the changelog-override label)" in line
+            for line in result.stdout.splitlines()), result.stdout)
 
     def test_deleted_unreleased_only_changelog_passes(self):
         self.f.commit("main", "# Changelog\n\n## [Unreleased]\n- Pending fix\n", "unreleased only")
@@ -255,7 +258,12 @@ class GuardTest(unittest.TestCase):
         self.f.get(1)["labels"] = ["other", "changelog-override"]
         p = self.f.run("pr", 1)
         self.assertPass(p)
-        self.assertIn("::warning", p.stdout)
+        self.assertTrue(any(
+            line.startswith("::warning title=changelog-guard::")
+            and "changes released section [1.0.0]" in line
+            and "`- First release`" in line
+            and "(allowed by the changelog-override label)" in line
+            for line in p.stdout.splitlines()), p.stdout)
 
     def test_label_does_not_clear_other_errors(self):
         self.f.pr(1, add_unreleased("- Existing fix", base=BASE_CL.replace("- First release", "- First")),
