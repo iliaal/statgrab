@@ -6,6 +6,7 @@ from pathlib import Path
 
 SRC = Path(__file__).resolve().parent
 M = [
+    ("deleted changelog is checked", "    old, new = show(base) or [], show(tree) or []", "    old, new = show(base) or [], show(tree)\n    if new is None:\n        return [], []"),
     # Docstring, pr mode: each rule
     ("conflict with the base fails", "    if CL in conflicts:\n        return [f\"{label}: {CL} conflicts with the base branch", "    if False:\n        return [f\"{label}: {CL} conflicts with the base branch"),
     ("released: changed or removed line", "for i in range(i1, i2) if osec[i] in released", "for i in range(i1, i2) if False"),
