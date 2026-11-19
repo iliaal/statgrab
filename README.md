@@ -13,7 +13,7 @@ cross-platform system-statistics library. Originally released to PECL
 in 2006 against libstatgrab 0.6; the 2.0.0 line is a full
 modernization for the PHP 8.0+ era against libstatgrab 0.92+.
 
-Supports PHP 8.0 through 8.5 on glibc Linux, musl, macOS, and \*BSD.
+Supports PHP 8.0 through 8.6 on glibc Linux, musl, macOS, and \*BSD.
 
 ## ⚖️ Why native
 

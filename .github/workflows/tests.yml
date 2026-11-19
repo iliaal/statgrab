@@ -102,9 +102,12 @@ jobs:
           php run-tests.php --show-diff -g FAIL,BORK,LEAK,XLEAK tests/
 
   linux-php86:
-    name: PHP 8.6 - Linux NTS (PHP-8.6 branch)
+    name: PHP 8.6 - Linux NTS (8.6.0 release)
     runs-on: ubuntu-22.04
     needs: validate
+    env:
+      PHP_SRC: php-8.6.0
+      PHP_SRC_SHA256: 5f84beaa3d763aee1e4feed99bf54ec692c383b322e25626807b589238c3a087
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -116,11 +119,13 @@ jobs:
           sudo apt-get install -y re2c bison autoconf automake libtool \
                                   pkg-config libxml2-dev libsqlite3-dev libstatgrab-dev
 
-      - name: Build PHP 8.6 from the PHP-8.6 branch
+      - name: Build PHP 8.6 from the 8.6.0 release tarball
         run: |
-          git clone --depth=1 --branch=PHP-8.6 https://github.com/php/php-src.git /tmp/php-src
+          curl -fsSL -o "/tmp/$PHP_SRC.tar.xz" "https://www.php.net/distributions/$PHP_SRC.tar.xz"
+          echo "$PHP_SRC_SHA256  /tmp/$PHP_SRC.tar.xz" | sha256sum -c -
+          tar -xJf "/tmp/$PHP_SRC.tar.xz" -C /tmp
+          mv "/tmp/$PHP_SRC" /tmp/php-src
           cd /tmp/php-src
-          ./buildconf --force
           ./configure --disable-zts --disable-all --enable-cli \
                       --disable-cgi --disable-phpdbg --prefix=/tmp/php-86
           make -j$(nproc)

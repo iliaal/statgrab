@@ -8,7 +8,7 @@ repo: iliaal/statgrab
 
 # Local rebuild matrix /release-ext exercises before tagging. Each entry
 # maps to a $HOME/php-install-PHP-<entry> install. CI covers the broader
-# 8.0..8.5 range plus the ASan-bundled lane via .github/workflows/tests.yml.
+# 8.0..8.6 range plus the ASan-bundled lane via .github/workflows/tests.yml.
 build_matrix:
   - PHP-8.3
   - PHP-8.4
