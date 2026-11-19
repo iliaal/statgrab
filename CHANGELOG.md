@@ -9,9 +9,10 @@ this project adheres to [Semantic Versioning](https://semver.org).
 ### Fixed
 
 - ZTS: an `sg_fs_stats()` call stalled on a hung mount no longer blocks other threads' `sg_fs_stats()` and `sg_valid_filesystems()` calls on glibc; `sg_set_valid_filesystems()` still waits for it.
-- ZTS: a thread that used statgrab no longer crashes on exit when the host unloaded the extension first; the module now stays mapped until process exit.
+- ZTS: a thread that used statgrab no longer crashes on exit when the host unloaded the extension first; libphp and the extension still unload normally.
 - `sg_error_details()` no longer reports an error from an earlier request on the same thread, including an earlier HTTP request in FrankenPHP worker mode.
 - Bundled libstatgrab: `sg_fs_stats()` now reports a mount-table open failure instead of `no error (code 0)`.
+- Bundled libstatgrab: with PHP linked against oniguruma (the official Docker `php` images), `sg_network_stats()` returned no rows and the default filesystem filter was empty; libstatgrab now always uses glibc's regex.
 - PHP 8.5.12+ and 8.6: a stat call whose result outgrows `memory_limit` now ends with the usual memory-limit fatal error instead of the process exiting with status 137.
 
 ## [2.3.1] - 2026-10-14

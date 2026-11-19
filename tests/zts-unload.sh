@@ -1,6 +1,8 @@
 #!/bin/sh
 # ZTS integration test: a thread that used statgrab exits after PHP has
 # unloaded shared extensions, then PHP starts again in the same process.
+# Then a host dlopen()s libphp and unloads it again, and neither libphp nor
+# statgrab.so may stay mapped.
 # usage: tests/zts-unload.sh <php-config>
 # <php-config> must belong to a ZTS PHP built with --enable-embed, and
 # modules/statgrab.so must be built against it.
@@ -35,6 +37,8 @@ fi
 "${CC:-cc}" -g -O1 $san $("$php_config" --includes) \
     "$src/tests/fixtures/zts-unload.c" -o "$work/driver" \
     -L"$libdir" -Wl,-rpath,"$libdir" -lphp -pthread
+# shellcheck disable=SC2086
+"${CC:-cc}" -g -O1 $san "$src/tests/fixtures/embed-dlclose.c" -o "$work/dlclose" -ldl
 
 ASAN_OPTIONS=detect_leaks=0:halt_on_error=1:detect_odr_violation=0
 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1
@@ -48,4 +52,14 @@ if test "$status" -ne 0 || test "$got" -ne 6; then
     cat "$work/log"
     exit 1
 fi
-echo "PASS ($got/6 ok lines)"
+echo "PASS threads ($got/6 ok lines)"
+
+status=0
+timeout 120 "$work/dlclose" "$libdir/libphp.so" "$ext" >"$work/dlclose.log" 2>&1 || status=$?
+got=$(grep -c '^ok ' "$work/dlclose.log" || true)
+if test "$status" -ne 0 || test "$got" -ne 4; then
+    echo "FAIL dlclose (exit $status, $got/4 ok lines)"
+    cat "$work/dlclose.log"
+    exit 1
+fi
+echo "PASS dlclose ($got/4 ok lines)"

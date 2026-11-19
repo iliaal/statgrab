@@ -107,6 +107,14 @@ The vendored libstatgrab tree stays LGPL 2.1+ (see `LICENSE.libstatgrab`);
 the extension code stays PHP-3.01 (see `LICENSE`). Dynamic-link or
 static-link, neither license infects the other.
 
+A PHP binary linked against oniguruma's `libonig`, as in the official
+Docker `php` images that FrankenPHP builds on, exports its own
+`regcomp()` and `regexec()`. The bundled copy always calls glibc's
+regex functions. A system libstatgrab binds to oniguruma's instead, and
+then `sg_network_stats()` returns no rows and the default
+`sg_valid_filesystems()` list is empty, so `sg_fs_stats()` returns
+`false`. Build with `--with-statgrab=bundled` for those PHP binaries.
+
 ## API
 
 ### Procedural
@@ -203,7 +211,8 @@ it, and blocks `sg_set_valid_filesystems()` in every thread until that walk
 returns. With glibc's default reader-preferring lock, it does not delay
 `sg_valid_filesystems()` or queue other threads' walks behind it; where
 the platform's lock prefers writers, a setter waiting behind the hung walk
-also blocks those later calls.
+also blocks those later calls. With glibc's lock, while `sg_fs_stats()` calls keep overlapping, `sg_set_valid_filesystems()`
+can wait indefinitely for a gap between them.
 
 When the filter matches no mounted filesystem, `sg_fs_stats()` and
 `Statgrab::filesystems()` return `false` with the warning

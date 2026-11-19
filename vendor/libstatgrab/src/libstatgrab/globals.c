@@ -69,6 +69,11 @@ static void sg_destroy_main_globals(void);
 # if defined(HAVE_PTHREAD)
 #  include <pthread.h>
 static pthread_key_t glob_key;
+/* statgrab: the key lives from the first sg_comp_init() to the last
+ * sg_comp_destroy(). Deleting it there means a thread that exits after the
+ * library is unloaded never runs sg_destroy_globals() from unmapped code;
+ * per-thread storage of threads still alive at that point is leaked. */
+static int glob_key_created = 0;
 #  ifdef NEED_PTHREAD_ONCE_INIT_BRACES
 static pthread_once_t once_control = { PTHREAD_ONCE_INIT };
 #  else
@@ -189,9 +194,6 @@ sg_first_init(void)
 	pthread_mutexattr_t attr;
 	int rc;
 
-	rc = pthread_key_create(&glob_key, sg_destroy_globals);
-	if( 0 != rc )
-		abort(); // can't store error state without TLS
 	rc = pthread_mutexattr_init(&attr);
 	if( 0 != rc )
 		abort();
@@ -226,6 +228,8 @@ sg_destroy_main_globals(void)
 #if defined(ENABLE_THREADS)
 # if defined(HAVE_PTHREAD)
 	char *glob_buf;
+	if( !glob_key_created )
+		return;
 	while( NULL != ( glob_buf = pthread_getspecific(glob_key) ) )
 		sg_destroy_globals(glob_buf);
 # elif defined(WIN32)
@@ -259,6 +263,13 @@ sg_comp_init(int ignore_init_errors) {
 	sg_global_lock();
 	if( 0 != initialized++ )
 		return sg_global_unlock();
+# if defined(HAVE_PTHREAD)
+	if( !glob_key_created ) {
+		if( 0 != pthread_key_create(&glob_key, sg_destroy_globals) )
+			abort(); // can't store error state without TLS
+		glob_key_created = 1;
+	}
+# endif
 #endif
 
 	atexit((void (*)(void))sg_destroy_main_globals);
@@ -405,6 +416,10 @@ sg_comp_destroy(void) {
 	}
 	free( required_locks );
 	num_required_locks = 0;
+
+	sg_destroy_main_globals();
+	pthread_key_delete(glob_key);
+	glob_key_created = 0;
 #endif
 
 #ifdef ENABLE_THREADS
@@ -507,6 +522,8 @@ sg_comp_get_tls(unsigned id) {
 #ifdef ENABLE_THREADS
 	char *glob_buf;
 # if defined(HAVE_PTHREAD)
+	if( !glob_key_created )
+		return NULL;
 	glob_buf = pthread_getspecific(glob_key);
 # elif defined(WIN32)
 	glob_buf = TlsGetValue(glob_tls_idx);

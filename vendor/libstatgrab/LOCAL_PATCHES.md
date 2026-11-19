@@ -167,3 +167,43 @@ Reproducer: `tests/c/fs-setmntent.sh` fails every `setmntent()` through
 errno `EACCES`.
 
 Local only; not submitted upstream.
+
+### 0007-globals-delete-tls-key-on-last-destroy.patch (2026-11-19)
+
+`src/libstatgrab/globals.c` — the per-thread storage key was created
+once with `pthread_once()` and never deleted, with `sg_destroy_globals()`
+as its destructor. A thread that used the library and exited after the
+host unloaded it (an embed host shutting PHP down while worker threads are
+alive) ran that destructor from unmapped code and crashed.
+
+Fix: create the key on the first `sg_comp_init()` and delete it on the
+last `sg_comp_destroy()`, after freeing the calling thread's storage.
+Deleted keys run no destructors. Storage of other threads still alive at
+that point is leaked, once per unload. `sg_comp_get_tls()` returns NULL
+while no key exists.
+
+Reproducer: `tests/zts-unload.sh` against an ASan ZTS embed PHP. Without
+the patch the worker thread dies with an ASan SEGV at an unmapped pc after
+`php_embed_shutdown()`; with it all 6 ok lines print. The extension used
+to pin itself with `RTLD_NODELETE` instead, which also kept libphp mapped
+for hosts that `dlclose()` PHP.
+
+Local only; not submitted upstream.
+
+### 0008-tools-resolve-regex-in-glibc.patch (2026-11-19)
+
+`src/libstatgrab/tools.h`, `src/libstatgrab/tools.c` — on glibc, the
+library's `regcomp()`/`regexec()`/`regfree()` calls now go through
+wrappers that look the functions up in libc with `dlopen(LIBC_SO,
+RTLD_NOLOAD)` and `dlsym()`. A program that exports other functions
+under those names (PHP linked against oniguruma's `libonig`, as in the
+official Docker `php` images) otherwise receives the library's unversioned
+references, so the `/proc/net/dev` and `/proc/filesystems` patterns never
+matched: `sg_get_network_io_stats()` returned no rows and the default
+valid-filesystems list was empty. Other C libraries keep the plain calls.
+
+Reproducer: `tests/c/regex-interpose.sh` links a program that defines its
+own failing regex functions. Without the patch it reports `network
+rows=0` and 18 foreign regex calls; with it, real rows and 0 foreign calls.
+
+Local only; not submitted upstream.

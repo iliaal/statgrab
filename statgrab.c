@@ -631,7 +631,7 @@ static void php_sg_valid_filesystems(zval *return_value)
 	int alloc_failed = 0;
 
 	/* Copy into one malloc'd block so no library-owned pointer outlives
-	 * the lock; emalloc here could bail out with the mutex held. */
+	 * the lock; emalloc here could bail out with the lock held. */
 	PHP_SG_FS_RDLOCK();
 	const char **fs = sg_get_valid_filesystems(&entries);
 	if (fs != NULL) {
@@ -916,13 +916,18 @@ static int php_sg_sapi_activate(void)
 
 PHP_MINIT_FUNCTION(statgrab)
 {
-#if defined(COMPILE_DL_STATGRAB) && defined(RTLD_NODELETE)
-	/* libstatgrab registers a pthread key destructor and never deletes the
-	 * key, so a thread that used it and exits after PHP unloads this module
-	 * would jump into unmapped code. Keep the module mapped until exit. */
-	Dl_info self;
-	if (dladdr((void *)&statgrab_module_entry, &self) != 0 && self.dli_fname != NULL) {
-		(void)dlopen(self.dli_fname, RTLD_LAZY | RTLD_NOLOAD | RTLD_NODELETE);
+#if defined(ZTS) && defined(RTLD_NODELETE)
+	/* A system libstatgrab registers a pthread key destructor and never
+	 * deletes the key, so a thread that used it and exits after the library
+	 * is unloaded would jump into unmapped code. Keep that library mapped
+	 * until exit; it does not depend on PHP, so PHP itself can still be
+	 * unloaded. The bundled copy, linked into this module, deletes its key
+	 * in sg_shutdown() instead. */
+	Dl_info lib, self;
+	if (dladdr((void *)&sg_init, &lib) != 0 && lib.dli_fname != NULL
+			&& dladdr((void *)&statgrab_module_entry, &self) != 0
+			&& lib.dli_fbase != self.dli_fbase) {
+		(void)dlopen(lib.dli_fname, RTLD_LAZY | RTLD_NOLOAD | RTLD_NODELETE);
 	}
 #endif
 

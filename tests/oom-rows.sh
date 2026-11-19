@@ -63,10 +63,20 @@ probe() {
 
 # PHP builds that load extensions with RTLD_DEEPBIND bind statgrab.so to
 # libc before the preloaded shim, so the shim cannot add rows there.
-seen=$(SG_ROWS=3 LD_PRELOAD="$work/many-rows.so" "$php" -n -d extension="$ext" \
+seen=$(SG_ROWS=3 LD_PRELOAD="$work/many-rows.so" "$php" -n -d display_errors=0 -d extension="$ext" \
     -r 'echo count(sg_diskio_stats() ?: []);')
+# The shim's /proc/net/dev rows only parse if libstatgrab's own regex
+# works, and every Linux host has at least "lo".
+fns='sg_fs_stats sg_network_iface_stats sg_diskio_stats sg_user_stats'
+real=$("$php" -n -d display_errors=0 -d extension="$ext" -r 'echo count(sg_network_stats() ?: []);')
+if test "$real" -ge 1; then
+    fns="$fns sg_network_stats"
+else
+    echo "FAIL sg_network_stats: no rows from the real /proc/net/dev"
+    rc=1
+fi
 if test "$seen" = 3; then
-    for fn in sg_fs_stats sg_network_stats sg_network_iface_stats sg_diskio_stats sg_user_stats; do
+    for fn in $fns; do
         probe env SG_ROWS=40000 LD_PRELOAD="$work/many-rows.so" \
             "$php" -n -d extension="$ext" "$work/probe.php" "$fn"
     done
