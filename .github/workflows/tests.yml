@@ -21,7 +21,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+      # setup-php main until a release marks PHP 8.6 stable; return to a tagged release then.
+      - uses: shivammathur/setup-php@3c21e10268bafaf84c59e8f4e65b39acacb62ca4 # main # zizmor: ignore[stale-action-refs,ref-version-mismatch]
         with:
           php-version: '8.4'
           tools: composer
@@ -38,7 +39,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+      - uses: shivammathur/setup-php@3c21e10268bafaf84c59e8f4e65b39acacb62ca4 # main # zizmor: ignore[stale-action-refs,ref-version-mismatch]
         with:
           php-version: '8.4'
           tools: phpize, php-config
@@ -64,7 +65,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        php: ['8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6']
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -74,7 +75,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libstatgrab-dev pkg-config
 
       - name: Setup PHP ${{ matrix.php }}
-        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        uses: shivammathur/setup-php@3c21e10268bafaf84c59e8f4e65b39acacb62ca4 # main # zizmor: ignore[stale-action-refs,ref-version-mismatch]
         with:
           php-version: ${{ matrix.php }}
           tools: phpize, php-config
@@ -100,46 +101,6 @@ jobs:
           export TEST_PHP_EXECUTABLE=$(which php)
           export TEST_PHP_ARGS="-d extension=$(pwd)/modules/statgrab.so"
           php run-tests.php --show-diff -g FAIL,BORK,LEAK,XLEAK tests/
-
-  linux-php86:
-    name: PHP 8.6 - Linux NTS (PHP-8.6 branch)
-    runs-on: ubuntu-22.04
-    needs: validate
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Install build deps + libstatgrab
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y re2c bison autoconf automake libtool \
-                                  pkg-config libxml2-dev libsqlite3-dev libstatgrab-dev
-
-      - name: Build PHP 8.6 from the PHP-8.6 branch
-        run: |
-          git clone --depth=1 --branch=PHP-8.6 https://github.com/php/php-src.git /tmp/php-src
-          cd /tmp/php-src
-          ./buildconf --force
-          ./configure --disable-zts --disable-all --enable-cli \
-                      --disable-cgi --disable-phpdbg --prefix=/tmp/php-86
-          make -j$(nproc)
-          make install
-
-      - name: Build extension
-        run: |
-          export PATH="/tmp/php-86/bin:$PATH"
-          phpize
-          ./configure --with-statgrab --with-php-config=/tmp/php-86/bin/php-config
-          make -j$(nproc)
-
-      - name: Run test suite
-        env:
-          NO_INTERACTION: 1
-        run: |
-          export TEST_PHP_EXECUTABLE=/tmp/php-86/bin/php
-          export TEST_PHP_ARGS="-d extension=$(pwd)/modules/statgrab.so"
-          /tmp/php-86/bin/php run-tests.php --show-diff -g FAIL,BORK,LEAK,XLEAK tests/
 
   asan-bundled:
     name: PHP 8.4 - ASAN (bundled libstatgrab)
@@ -290,19 +251,17 @@ jobs:
   gate:
     name: CI gate
     runs-on: ubuntu-latest
-    needs: [linux, linux-php86, asan-bundled, zts-asan-bundled, pie-smoke]
+    needs: [linux, asan-bundled, zts-asan-bundled, pie-smoke]
     if: always()
     steps:
       - name: Check required jobs
         env:
           LINUX_RESULT: ${{ needs.linux.result }}
-          LINUX_PHP86_RESULT: ${{ needs.linux-php86.result }}
           ASAN_RESULT: ${{ needs.asan-bundled.result }}
           ZTS_ASAN_RESULT: ${{ needs.zts-asan-bundled.result }}
           PIE_RESULT: ${{ needs.pie-smoke.result }}
         run: |
           test "$LINUX_RESULT" = "success"
-          test "$LINUX_PHP86_RESULT" = "success"
           test "$ASAN_RESULT" = "success"
           test "$ZTS_ASAN_RESULT" = "success"
           test "$PIE_RESULT" = "success"
