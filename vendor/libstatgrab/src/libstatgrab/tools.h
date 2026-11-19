@@ -524,6 +524,17 @@ __sg_private char *sg_get_string_match(char *line, regmatch_t *match);
 __sg_private char *sg_f_read_line(FILE *f, char *linebuf, size_t buf_size, const char *string);
 #endif
 
+#if HAVE_REGEX_H && defined(__GLIBC__)
+/* statgrab: call glibc's POSIX regex functions even when the host program
+ * exports others under the same names; see sg_libc_regex_sym(). */
+__sg_private int sg_regcomp(regex_t *preg, const char *regex, int cflags);
+__sg_private int sg_regexec(const regex_t *preg, const char *string, size_t nmatch, regmatch_t pmatch[], int eflags);
+__sg_private void sg_regfree(regex_t *preg);
+# define regcomp sg_regcomp
+# define regexec sg_regexec
+# define regfree sg_regfree
+#endif
+
 #if defined(__NEED_SG_GET_SYS_PAGE_SIZE)
 static ssize_t sys_page_size;
 

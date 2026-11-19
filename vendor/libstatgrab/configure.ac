@@ -133,6 +133,9 @@ AS_IF([test -n "$XOPEN_SOURCE_CPPFLAGS"], [CPPFLAGS="$CPPFLAGS $XOPEN_SOURCE_CPP
 dnl Checks for inet libraries:
 AC_SEARCH_LIBS(gethostent, [nsl])
 AC_SEARCH_LIBS(setsockopt, [socket net network])
+dnl statgrab: the glibc regex lookup in tools.c uses dlopen()/dlsym(),
+dnl which live in libdl before glibc 2.34.
+AC_SEARCH_LIBS(dlopen, [dl])
 dnl AC_SEARCH_LIBS(connect, [inet])
 
 # Checks for library functions

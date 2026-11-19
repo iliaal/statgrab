@@ -16,10 +16,12 @@
 #endif
 
 #include <statgrab.h>
+#include <dlfcn.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "php.h"
+#include "SAPI.h"
 #include "ext/standard/info.h"
 #include "Zend/zend_exceptions.h"
 #include "php_statgrab.h"
@@ -27,17 +29,28 @@
 
 static int sg_initialized = 0;
 
+/* libstatgrab keeps the last error per thread until a later call on that
+ * thread succeeds, so without this flag sg_error_details() would report an
+ * error left by an earlier request served on the same thread. */
+ZEND_TLS bool php_sg_request_error = false;
+
 /* libstatgrab keeps the valid-filesystems list in an unlocked process-global
  * that sg_set_valid_filesystems() frees and replaces, while
  * sg_get_fs_stats() reads it and sg_get_valid_filesystems() returns it
- * live. Serialize every call that touches it. The locked regions make no
- * Zend calls, so a bailout cannot leave the mutex held. */
+ * live. Readers share the lock so one slow statvfs() does not queue every
+ * other thread's walk behind it; only the setter excludes them. glibc's
+ * default rwlock prefers readers, so a setter queued behind a hung walk does
+ * not block later readers. The locked regions make no Zend calls, so a
+ * bailout cannot leave the lock held. */
 #ifdef ZTS
-static MUTEX_T php_sg_fs_mutex = NULL;
-# define PHP_SG_FS_LOCK()   tsrm_mutex_lock(php_sg_fs_mutex)
-# define PHP_SG_FS_UNLOCK() tsrm_mutex_unlock(php_sg_fs_mutex)
+# include <pthread.h>
+static pthread_rwlock_t php_sg_fs_lock = PTHREAD_RWLOCK_INITIALIZER;
+# define PHP_SG_FS_RDLOCK() pthread_rwlock_rdlock(&php_sg_fs_lock)
+# define PHP_SG_FS_WRLOCK() pthread_rwlock_wrlock(&php_sg_fs_lock)
+# define PHP_SG_FS_UNLOCK() pthread_rwlock_unlock(&php_sg_fs_lock)
 #else
-# define PHP_SG_FS_LOCK()
+# define PHP_SG_FS_RDLOCK()
+# define PHP_SG_FS_WRLOCK()
 # define PHP_SG_FS_UNLOCK()
 #endif
 
@@ -45,9 +58,21 @@ static MUTEX_T php_sg_fs_mutex = NULL;
  * so cap each proc_title copied into PHP memory. */
 #define PHP_SG_PROC_TITLE_MAX 4096
 
+/* Engines with ZEND_HAS_OOM() queue the memory-limit error instead of
+ * bailing out of the allocation that crosses memory_limit, then terminate
+ * the process with _exit() at the hard limit (twice memory_limit by
+ * default). Row loops stop once the error is queued so the engine can
+ * report it. */
+#ifdef ZEND_HAS_OOM
+# define PHP_SG_HAS_OOM() ZEND_HAS_OOM()
+#else
+# define PHP_SG_HAS_OOM() false
+#endif
+
 static void php_sg_emit_error(void)
 {
 	sg_error code = sg_get_error();
+	php_sg_request_error = true;
 	php_error_docref(NULL, E_WARNING, "libstatgrab: %s (code %d)",
 		sg_str_error(code), (int)code);
 }
@@ -190,7 +215,7 @@ static void php_sg_diskio(zval *return_value, int diff)
 	}
 
 	array_init(return_value);
-	for (size_t i = 0; i < entries; i++) {
+	for (size_t i = 0; i < entries && !PHP_SG_HAS_OOM(); i++) {
 		zval row;
 		array_init(&row);
 		PHP_SG_ADD_LONG(&row, "read",       dst[i].read_bytes);
@@ -208,7 +233,7 @@ static void php_sg_fs(zval *return_value)
 	/* libstatgrab checks each mount against the list between statvfs()
 	 * calls, so the whole walk runs under the lock. The returned vector is
 	 * thread-local and safe to read after unlocking. */
-	PHP_SG_FS_LOCK();
+	PHP_SG_FS_RDLOCK();
 	sg_fs_stats *fs = sg_get_fs_stats(&entries);
 	PHP_SG_FS_UNLOCK();
 
@@ -219,7 +244,7 @@ static void php_sg_fs(zval *return_value)
 	}
 
 	array_init(return_value);
-	for (size_t i = 0; i < entries; i++) {
+	for (size_t i = 0; i < entries && !PHP_SG_HAS_OOM(); i++) {
 		zval row;
 		/* Reserve all fields up front to avoid growing each mount record. */
 		array_init_size(&row, 20);
@@ -341,7 +366,7 @@ static void php_sg_network(zval *return_value, int diff)
 	}
 
 	array_init(return_value);
-	for (size_t i = 0; i < entries; i++) {
+	for (size_t i = 0; i < entries && !PHP_SG_HAS_OOM(); i++) {
 		zval row;
 		array_init(&row);
 		PHP_SG_ADD_LONG(&row, "sent",                ns[i].tx);
@@ -369,7 +394,7 @@ static void php_sg_iface(zval *return_value)
 	}
 
 	array_init(return_value);
-	for (size_t i = 0; i < entries; i++) {
+	for (size_t i = 0; i < entries && !PHP_SG_HAS_OOM(); i++) {
 		zval row;
 		array_init(&row);
 		PHP_SG_ADD_LONG(&row, "speed",   ifs[i].speed);
@@ -444,7 +469,7 @@ static void php_sg_add_proc_title(zval *row, const char *title)
 static void php_sg_build_process_rows(zval *return_value, const sg_process_stats *ps, zend_long limit)
 {
 	array_init(return_value);
-	for (zend_long i = 0; i < limit; i++) {
+	for (zend_long i = 0; i < limit && !PHP_SG_HAS_OOM(); i++) {
 		zval row;
 		/* Reserve all fields up front to avoid growing each process record. */
 		array_init_size(&row, 21);
@@ -556,7 +581,7 @@ static void php_sg_users(zval *return_value)
 	}
 
 	array_init(return_value);
-	for (size_t i = 0; i < entries; i++) {
+	for (size_t i = 0; i < entries && !PHP_SG_HAS_OOM(); i++) {
 		zval row;
 		array_init(&row);
 		PHP_SG_ADD_STRING_OR_EMPTY(&row, "login_name", us[i].login_name);
@@ -581,7 +606,7 @@ static void php_sg_users(zval *return_value)
 static void php_sg_build_string_list(zval *return_value, char **list, size_t count)
 {
 	array_init_size(return_value, (uint32_t)count);
-	for (char **p = list; *p; p++) {
+	for (char **p = list; *p && !PHP_SG_HAS_OOM(); p++) {
 		add_next_index_string(return_value, *p);
 	}
 }
@@ -606,8 +631,8 @@ static void php_sg_valid_filesystems(zval *return_value)
 	int alloc_failed = 0;
 
 	/* Copy into one malloc'd block so no library-owned pointer outlives
-	 * the lock; emalloc here could bail out with the mutex held. */
-	PHP_SG_FS_LOCK();
+	 * the lock; emalloc here could bail out with the lock held. */
+	PHP_SG_FS_RDLOCK();
 	const char **fs = sg_get_valid_filesystems(&entries);
 	if (fs != NULL) {
 		for (size_t i = 0; i < entries; i++) {
@@ -684,7 +709,7 @@ static void php_sg_set_valid_filesystems(zval *return_value, zval *zfs)
 	} ZEND_HASH_FOREACH_END();
 	buf[i] = NULL;
 
-	PHP_SG_FS_LOCK();
+	PHP_SG_FS_WRLOCK();
 	sg_error rc = sg_set_valid_filesystems(buf);
 	PHP_SG_FS_UNLOCK();
 	efree(buf);
@@ -709,6 +734,11 @@ static void php_sg_error_details(zval *return_value)
 {
 	sg_error_details det;
 	memset(&det, 0, sizeof det);
+
+	if (!php_sg_request_error) {
+		RETVAL_FALSE;
+		return;
+	}
 
 	/* rc describes the fetch; det.error holds the pending error. */
 	sg_error rc = sg_get_error_details(&det);
@@ -869,22 +899,44 @@ PHP_METHOD(Statgrab, processes)
 	php_sg_process_stats_impl(return_value, sort_order, num_entries, sort_is_null ? 0 : 1);
 }
 
+static int (*php_sg_orig_sapi_activate)(void) = NULL;
+
+/* FrankenPHP worker mode runs RINIT only when the worker script starts, but
+ * calls sapi_activate() at the start of every HTTP request. Worker code
+ * between two frankenphp_handle_request() calls runs after the previous
+ * request's sapi_deactivate(), so the reset belongs at activation. */
+static int php_sg_sapi_activate(void)
+{
+	php_sg_request_error = false;
+	return php_sg_orig_sapi_activate ? php_sg_orig_sapi_activate() : SUCCESS;
+}
+
 #define REGISTER_SG_BC_CONSTANT(c) \
 	REGISTER_LONG_CONSTANT(#c, c, CONST_CS | CONST_PERSISTENT)
 
 PHP_MINIT_FUNCTION(statgrab)
 {
-#ifdef ZTS
-	php_sg_fs_mutex = tsrm_mutex_alloc();
-	if (php_sg_fs_mutex == NULL) {
-		return FAILURE;
+#if defined(ZTS) && defined(RTLD_NODELETE)
+	/* A system libstatgrab registers a pthread key destructor and never
+	 * deletes the key, so a thread that used it and exits after the library
+	 * is unloaded would jump into unmapped code. Keep that library mapped
+	 * until exit; it does not depend on PHP, so PHP itself can still be
+	 * unloaded. The bundled copy, linked into this module, deletes its key
+	 * in sg_shutdown() instead. */
+	Dl_info lib, self;
+	if (dladdr((void *)&sg_init, &lib) != 0 && lib.dli_fname != NULL
+			&& dladdr((void *)&statgrab_module_entry, &self) != 0
+			&& lib.dli_fbase != self.dli_fbase) {
+		(void)dlopen(lib.dli_fname, RTLD_LAZY | RTLD_NOLOAD | RTLD_NODELETE);
 	}
 #endif
 
 	if (sg_init(1) == SG_ERROR_NONE) {
 		sg_initialized = 1;
 
-		/* Seed CPU percent and *_diff counters for the first user call. */
+		/* In bundled libstatgrab only the Windows backend does work here; on
+		 * Unix this is a no-op. CPU and *_diff baselines are per thread, so
+		 * nothing done on the MINIT thread would reach request threads. */
 		if (sg_snapshot() != SG_ERROR_NONE) {
 			php_error_docref(NULL, E_NOTICE,
 				"libstatgrab: sg_snapshot failed: %s",
@@ -930,21 +982,34 @@ PHP_MINIT_FUNCTION(statgrab)
 	REGISTER_SG_BC_CONSTANT(SG_PROCESS_STATE_ZOMBIE);
 	REGISTER_SG_BC_CONSTANT(SG_PROCESS_STATE_UNKNOWN);
 
+	/* A module loaded with dl() is unloaded at request end, which would
+	 * leave a later wrapper chained to unmapped code. */
+	if (type == MODULE_PERSISTENT) {
+		php_sg_orig_sapi_activate = sapi_module.activate;
+		sapi_module.activate = php_sg_sapi_activate;
+	}
+
 	return SUCCESS;
 }
 
 PHP_MSHUTDOWN_FUNCTION(statgrab)
 {
+	if (sapi_module.activate == php_sg_sapi_activate) {
+		sapi_module.activate = php_sg_orig_sapi_activate;
+	}
 	if (sg_initialized) {
 		sg_shutdown();
 		sg_initialized = 0;
 	}
-#ifdef ZTS
-	if (php_sg_fs_mutex) {
-		tsrm_mutex_free(php_sg_fs_mutex);
-		php_sg_fs_mutex = NULL;
-	}
+	return SUCCESS;
+}
+
+PHP_RINIT_FUNCTION(statgrab)
+{
+#if defined(ZTS) && defined(COMPILE_DL_STATGRAB)
+	ZEND_TSRMLS_CACHE_UPDATE();
 #endif
+	php_sg_request_error = false;
 	return SUCCESS;
 }
 
@@ -963,7 +1028,7 @@ zend_module_entry statgrab_module_entry = {
 	ext_functions,
 	PHP_MINIT(statgrab),
 	PHP_MSHUTDOWN(statgrab),
-	NULL,
+	PHP_RINIT(statgrab),
 	NULL,
 	PHP_MINFO(statgrab),
 	PHP_STATGRAB_VERSION,

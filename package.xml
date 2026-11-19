@@ -81,14 +81,20 @@ See CHANGELOG.md for the full list.
    <dir name="tests">
     <file name="named-rows.sh" role="test" />
     <dir name="fixtures">
+     <file name="fail-meminfo.c" role="test" />
+     <file name="many-rows.c" role="test" />
      <file name="named-rows.c" role="test" />
      <file name="named-rows.php" role="test" />
+     <file name="slow-statvfs.c" role="test" />
      <file name="zts-driver.c" role="test" />
      <file name="zts-fs.php" role="test" />
      <file name="zts-list.php" role="test" />
      <file name="zts-setter.php" role="test" />
+     <file name="zts-stale-error.php" role="test" />
+     <file name="zts-stall.php" role="test" />
      <file name="zts-symmetric.php" role="test" />
      <file name="zts-types.php" role="test" />
+     <file name="zts-unload.c" role="test" />
     </dir>
     <file name="001-load.phpt"            role="test" />
     <file name="002-host.phpt"            role="test" />
@@ -124,7 +130,12 @@ See CHANGELOG.md for the full list.
 <file name="032-cpu-percent-finite.phpt" role="test" />
 <file name="033-process-session-id.phpt" role="test" />
 <file name="034-process-title-cap.phpt" role="test" />
+<file name="035-valid-filesystems-memory-limit.phpt" role="test" />
 <file name="zts-valid-filesystems.sh" role="test" />
+<file name="zts-fs-stall.sh" role="test" />
+<file name="zts-stale-error.sh" role="test" />
+<file name="zts-unload.sh" role="test" />
+<file name="oom-rows.sh" role="test" />
 <file name="configure-prefix.sh" role="test" />
    </dir>
   </dir>

@@ -770,3 +770,55 @@ sg_log_init(const char *properties_pfx, const char *env_name, const char *argv0)
 	log4cplus_basic_configure();
 }
 #endif
+
+#if HAVE_REGEX_H && defined(__GLIBC__)
+#include <dlfcn.h>
+#include <gnu/lib-names.h>
+#undef regcomp
+#undef regexec
+#undef regfree
+
+/* statgrab: a host program can export another POSIX regex API; PHP linked
+ * against oniguruma's libonig exports unversioned regcomp()/regexec(), and
+ * an unversioned reference from this library binds to the first definition
+ * in the global scope. The regex_t layout comes from glibc's <regex.h>, so
+ * resolve the functions in libc itself. */
+static void *
+sg_libc_regex_sym(void **cache, const char *name, void *fallback) {
+	void *fn = __atomic_load_n(cache, __ATOMIC_ACQUIRE);
+	if( NULL == fn ) {
+		void *libc = dlopen(LIBC_SO, RTLD_LAZY | RTLD_NOLOAD);
+		if( NULL != libc ) {
+			fn = dlsym(libc, name);
+			dlclose(libc);
+		}
+		if( NULL == fn )
+			fn = fallback;
+		__atomic_store_n(cache, fn, __ATOMIC_RELEASE);
+	}
+	return fn;
+}
+
+int
+sg_regcomp(regex_t *preg, const char *regex, int cflags) {
+	static void *cache;
+	int (*fn)(regex_t *, const char *, int) =
+		(int (*)(regex_t *, const char *, int))sg_libc_regex_sym(&cache, "regcomp", (void *)regcomp);
+	return fn(preg, regex, cflags);
+}
+
+int
+sg_regexec(const regex_t *preg, const char *string, size_t nmatch, regmatch_t pmatch[], int eflags) {
+	static void *cache;
+	int (*fn)(const regex_t *, const char *, size_t, regmatch_t *, int) =
+		(int (*)(const regex_t *, const char *, size_t, regmatch_t *, int))sg_libc_regex_sym(&cache, "regexec", (void *)regexec);
+	return fn(preg, string, nmatch, pmatch, eflags);
+}
+
+void
+sg_regfree(regex_t *preg) {
+	static void *cache;
+	void (*fn)(regex_t *) = (void (*)(regex_t *))sg_libc_regex_sym(&cache, "regfree", (void *)regfree);
+	fn(preg);
+}
+#endif
