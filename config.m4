@@ -28,6 +28,9 @@ if test "$PHP_STATGRAB" != "no"; then
     dnl under the source tree, and a -L/-l lookup would then silently resolve to
     dnl a system libstatgrab without the local patches.
     STATGRAB_SHARED_LIBADD="$BUNDLED_LIB"
+    dnl The bundled archive calls dlopen()/dlsym(), in libdl before glibc 2.34.
+    AC_CHECK_FUNC([dlopen], [],
+      [AC_CHECK_LIB([dl], [dlopen], [STATGRAB_SHARED_LIBADD="$STATGRAB_SHARED_LIBADD -ldl"])])
     STATGRAB_SHARED_DEPENDENCIES="$BUNDLED_LIB"
     PHP_SUBST([STATGRAB_SHARED_DEPENDENCIES])
     STATGRAB_BUNDLED=yes

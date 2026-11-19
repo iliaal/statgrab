@@ -107,13 +107,15 @@ The vendored libstatgrab tree stays LGPL 2.1+ (see `LICENSE.libstatgrab`);
 the extension code stays PHP-3.01 (see `LICENSE`). Dynamic-link or
 static-link, neither license infects the other.
 
-A PHP binary linked against oniguruma's `libonig`, as in the official
-Docker `php` images that FrankenPHP builds on, exports its own
+On glibc, a PHP binary linked against oniguruma's `libonig`, as in the
+official Docker `php` images that FrankenPHP builds on, exports its own
 `regcomp()` and `regexec()`. The bundled copy always calls glibc's
 regex functions. A system libstatgrab binds to oniguruma's instead, and
 then `sg_network_stats()` returns no rows and the default
 `sg_valid_filesystems()` list is empty, so `sg_fs_stats()` returns
 `false`. Build with `--with-statgrab=bundled` for those PHP binaries.
+The bundled copy also returns rows on the musl-based Alpine images, which
+link `libonig` too.
 
 ## API
 

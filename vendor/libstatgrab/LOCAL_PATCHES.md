@@ -178,7 +178,9 @@ alive) ran that destructor from unmapped code and crashed.
 
 Fix: create the key on the first `sg_comp_init()` and delete it on the
 last `sg_comp_destroy()`, after freeing the calling thread's storage.
-Deleted keys run no destructors. Storage of other threads still alive at
+Deleted keys run no destructors. The created flag is read without the
+lock in `sg_comp_get_tls()`, so it is accessed with acquire/release
+atomics. Storage of other threads still alive at
 that point is leaked, once per unload. `sg_comp_get_tls()` returns NULL
 while no key exists.
 
@@ -200,7 +202,11 @@ under those names (PHP linked against oniguruma's `libonig`, as in the
 official Docker `php` images) otherwise receives the library's unversioned
 references, so the `/proc/net/dev` and `/proc/filesystems` patterns never
 matched: `sg_get_network_io_stats()` returned no rows and the default
-valid-filesystems list was empty. Other C libraries keep the plain calls.
+valid-filesystems list was empty. Other C libraries keep the plain calls;
+with musl (FrankenPHP's Alpine image, which also links `libonig`) the
+library already gets musl's regex. `configure.ac` adds
+`AC_SEARCH_LIBS(dlopen, [dl])` because glibc before 2.34 keeps
+`dlopen()` in libdl.
 
 Reproducer: `tests/c/regex-interpose.sh` links a program that defines its
 own failing regex functions. Without the patch it reports `network
