@@ -1,0 +1,68 @@
+name: PHP master (advisory)
+
+# Builds and tests against php-src master (PHP 8.7-dev) as an early-warning
+# signal. continue-on-error keeps an upstream break from failing the run;
+# tests.yml stays the gate.
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 6 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: php-master-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  php-master:
+    name: PHP 8.7 (master, advisory)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install libstatgrab
+        run: sudo apt-get update && sudo apt-get install -y libstatgrab-dev pkg-config
+
+      - name: Setup PHP 8.7
+        uses: shivammathur/setup-php@3c21e10268bafaf84c59e8f4e65b39acacb62ca4 # main # zizmor: ignore[stale-action-refs,ref-version-mismatch]
+        with:
+          php-version: '8.7'
+          tools: phpize, php-config
+          coverage: none
+
+      - name: Show PHP version
+        run: php -v
+
+      - name: Test custom-prefix configure checks
+        run: sh tests/configure-prefix.sh
+
+      - name: Build extension
+        run: |
+          phpize
+          ./configure --with-statgrab
+          make -j"$(nproc)"
+
+      - name: Test numeric device and interface names
+        run: sh tests/named-rows.sh
+
+      - name: Stop row loops at memory_limit
+        run: sh tests/oom-rows.sh "$(which php)"
+
+      - name: Run test suite
+        env:
+          NO_INTERACTION: 1
+          ASAN_OPTIONS: detect_leaks=0
+        run: |
+          TEST_PHP_EXECUTABLE=$(which php)
+          TEST_PHP_ARGS="-d extension=$(pwd)/modules/statgrab.so"
+          export TEST_PHP_EXECUTABLE TEST_PHP_ARGS
+          php run-tests.php --show-diff -g FAIL,BORK,LEAK,XLEAK tests/
