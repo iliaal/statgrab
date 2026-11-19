@@ -146,3 +146,24 @@ reads `statgrab-cmdline --flag`.
 Upstream: https://github.com/libstatgrab/libstatgrab/pull/146. Drop this
 patch once upstream merges it and statgrab re-vendors a release that
 includes it.
+
+### 0006-fs-stats-keep-mount-table-error.patch (2026-11-19)
+
+`src/libstatgrab/disk_stats.c` — when `sg_get_fs_list_int()` failed (on
+Linux, `setmntent()` could open none of `/proc/mounts`, `/etc/mnttab`,
+`/etc/mtab`), `sg_get_fs_stats_int()` still resized the result vector
+to the 0 valid entries it had found. `sg_vector_resize()` with a count of
+0 frees the vector and calls `sg_clear_error()`, so `sg_get_fs_stats()`
+returned NULL with `sg_get_error()` reporting `SG_ERROR_NONE`. In PHP,
+`sg_fs_stats()` warned `libstatgrab: no error (code 0)` and
+`sg_error_details()` returned `false`.
+
+Fix: return the list error, after freeing the partial list, before the
+resize.
+
+Reproducer: `tests/c/fs-setmntent.sh` fails every `setmntent()` through
+`--wrap=setmntent`. With this patch reverted it prints `error=no error
+(0)` and fails; with the patch it reports `setmntent failed (33)` with
+errno `EACCES`.
+
+Local only; not submitted upstream.

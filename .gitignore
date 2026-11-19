@@ -82,6 +82,10 @@ tests/*.sh
 !tests/configure-prefix.sh
 !tests/bundled-static.sh
 !tests/zts-valid-filesystems.sh
+!tests/zts-fs-stall.sh
+!tests/zts-unload.sh
+!tests/zts-stale-error.sh
+!tests/oom-rows.sh
 tests/*.mem
 statgrab-*.tgz
 

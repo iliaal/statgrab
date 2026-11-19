@@ -194,11 +194,23 @@ The valid-filesystems filter is process-wide in libstatgrab, not
 per-request. In NTS builds it persists across requests in long-lived
 workers such as FPM. Under a threaded (ZTS) SAPI,
 `sg_set_valid_filesystems()` in one request also changes the
-`sg_fs_stats()` filter for every other thread. The extension serializes
-`sg_fs_stats()`, `sg_valid_filesystems()`, and `sg_set_valid_filesystems()`
-(and their `Statgrab` methods) across threads so concurrent calls are
-memory-safe. A hung mount that blocks `sg_fs_stats()` therefore stalls all
-of these calls in every thread.
+`sg_fs_stats()` filter for every other thread. The extension guards these calls with a
+reader-writer lock so concurrent calls are memory-safe: `sg_fs_stats()` and
+`sg_valid_filesystems()` (and their `Statgrab` methods) run concurrently,
+while `sg_set_valid_filesystems()` waits for every `sg_fs_stats()` call in
+flight. A hung mount therefore blocks each `sg_fs_stats()` call that reaches
+it, and blocks `sg_set_valid_filesystems()` in every thread until that walk
+returns. With glibc's default reader-preferring lock, it does not delay
+`sg_valid_filesystems()` or queue other threads' walks behind it; where
+the platform's lock prefers writers, a setter waiting behind the hung walk
+also blocks those later calls.
+
+When the filter matches no mounted filesystem, `sg_fs_stats()` and
+`Statgrab::filesystems()` return `false` with the warning
+`libstatgrab: no error (code 0)`, and `sg_error_details()` returns
+`false`: libstatgrab treats the empty result as success but returns no
+list. Under ZTS this can happen in a thread that never called the setter,
+after another thread's `sg_set_valid_filesystems()` call.
 
 ### Object-oriented
 
@@ -238,7 +250,22 @@ entry containing NUL bytes, `TypeError` on a non-string entry. A
 libstatgrab runtime failure from the setter (or any other stat call)
 takes the usual warning and `false` path. Call `sg_error_details()` /
 `Statgrab::errorDetails()` after a `false` return for the code, message,
-errno, and arg.
+errno, and arg. It returns `false` until a stat call fails in the current
+request, so an error left by an earlier request on the same thread or
+worker process is not reported. In FrankenPHP worker mode each HTTP request
+starts with no error, including one left by worker code that ran between
+two `frankenphp_handle_request()` calls.
+
+## Privileges
+
+At module startup the extension calls libstatgrab's `sg_drop_privileges()`.
+On Linux that sets the effective group and user IDs of the whole process to
+its real IDs (`setegid(getgid())`, then `seteuid(getuid())`). It changes
+nothing when they already match, as in FPM, Apache, FrankenPHP, or the CLI
+run normally. In a setuid or setgid PHP binary, everything after module
+startup, including other extensions and every thread, runs with the real
+IDs. The saved set-user-ID is kept, so code in the process can switch back.
+A failure is reported as an `E_NOTICE` at startup and is not fatal.
 
 ## Notable 2.0 BC breaks
 

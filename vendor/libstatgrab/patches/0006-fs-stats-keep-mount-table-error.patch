@@ -1,0 +1,18 @@
+--- a/src/libstatgrab/disk_stats.c
++++ b/src/libstatgrab/disk_stats.c
+@@ -1227,7 +1227,14 @@ sg_get_fs_stats_int(sg_vector **fs_stats_vector_ptr){
+ 
+ 	memset( valid, 0, sizeof(valid) );
+ 
+-	if( ( SG_ERROR_NONE == err ) && (NULL != tmp) ) {
++	/* Resizing the result vector to 0 below clears the error, so a failed
++	 * mount-table read must return before it. */
++	if( SG_ERROR_NONE != err ) {
++		sg_vector_free(tmp);
++		return err;
++	}
++
++	if( NULL != tmp ) {
+ 
+ 		i = VECTOR_ITEM_COUNT(tmp);
+ 		item += i;
