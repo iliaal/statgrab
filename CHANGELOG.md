@@ -6,6 +6,8 @@ this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [2.3.2] - 2026-11-20
+
 ### Fixed
 
 - ZTS: an `sg_fs_stats()` call stalled on a hung mount no longer blocks other threads' `sg_fs_stats()` and `sg_valid_filesystems()` calls on glibc; `sg_set_valid_filesystems()` still waits for it.
@@ -113,7 +115,8 @@ this project adheres to [Semantic Versioning](https://semver.org).
   `.release-config` and CI for safety against system libstatgrab
   shipping the unpatched library.
 
-[Unreleased]: https://github.com/iliaal/statgrab/compare/2.3.1...HEAD
+[Unreleased]: https://github.com/iliaal/statgrab/compare/2.3.2...HEAD
+[2.3.2]: https://github.com/iliaal/statgrab/releases/tag/2.3.2
 [2.3.1]: https://github.com/iliaal/statgrab/releases/tag/2.3.1
 [2.3.0]: https://github.com/iliaal/statgrab/releases/tag/2.3.0
 [2.2.2]: https://github.com/iliaal/statgrab/releases/tag/2.2.2

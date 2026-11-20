@@ -232,6 +232,13 @@ $sg->host();
 $sg->memory();
 $sg->processes(Statgrab::SORT_CPU, 10);    // processes(?int $sort_order = null, int $num_entries = 0): array|false
 $sg->disks(diff: true);
+$sg->load();                               // load(): array|false
+$sg->swap();                               // swap(): array|false
+$sg->network(diff: true);                  // network(bool $diff = false): array|false
+$sg->pages(diff: true);                    // pages(bool $diff = false): array|false
+$sg->processCount();                       // processCount(): array|false
+$sg->users();                              // users(): array|false
+$sg->interfaces();                         // interfaces(): array|false
 $sg->validFilesystems();                   // array|false: list of fs-type strings
 $sg->setValidFilesystems(['ext4']);        // bool: subsequent filesystems() only returns these fs_type values
 $sg->snapshot();                           // bool: backend snapshot hook; see CPU sampling above

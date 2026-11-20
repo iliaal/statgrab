@@ -45,10 +45,10 @@ Requires libstatgrab >= 0.92 and PHP >= 8.0 (NTS or ZTS).
   <email>ilia@ilia.ws</email>
   <active>yes</active>
  </lead>
- <date>2026-10-14</date>
+ <date>2026-11-20</date>
  <version>
-  <release>2.3.1</release>
-  <api>2.3.1</api>
+  <release>2.3.2</release>
+  <api>2.3.2</api>
  </version>
  <stability>
   <release>stable</release>
@@ -56,12 +56,18 @@ Requires libstatgrab >= 0.92 and PHP >= 8.0 (NTS or ZTS).
  </stability>
  <license uri="http://www.php.net/license">PHP License 3.01</license>
  <notes>
-Bundled libstatgrab security fix.
+ZTS, FrankenPHP worker mode, and bundled-library fixes.
 
-- On Linux, a process whose command line starts with crafted bytes
-  could make sg_process_stats() and sg_process_count() read and write
-  past a heap buffer. The bundled copy now carries the upstream fix
-  from libstatgrab#146.
+- Under ZTS on glibc, an sg_fs_stats() call stalled on a hung mount no
+  longer blocks other threads' sg_fs_stats() and sg_valid_filesystems().
+- A thread that used statgrab no longer crashes on exit after the host
+  unloads the extension.
+- sg_error_details() no longer reports an error from an earlier request
+  on the same thread, including in FrankenPHP worker mode.
+- Bundled libstatgrab reports a mount-table open failure from
+  sg_fs_stats(), and always uses glibc's regex when PHP links oniguruma.
+- On PHP 8.5.12+ and 8.6, a result that outgrows memory_limit ends with
+  the memory-limit fatal error instead of exit status 137.
 
 See CHANGELOG.md for the full list.
  </notes>
