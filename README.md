@@ -38,11 +38,15 @@ statgrab calls libstatgrab in-process. libstatgrab handles the per-OS path (Linu
 
 ## 🚀 Quick start
 
-### PIE (recommended on PHP 8.x)
+### PIE (recommended for non-thread-safe PHP)
 
 [PIE](https://github.com/php/pie) is the PHP Foundation's PECL successor.
-It installs from Packagist and builds against the active `php-config`.
-Install libstatgrab first (package names are under From source), then:
+The [Packagist package](https://packagist.org/packages/iliaal/statgrab)
+currently allows PIE installation on non-thread-safe PHP (NTS) only.
+For thread-safe PHP (ZTS), use the [bundled source build](#bundled-libstatgrab-statically-linked-leak-fixed)
+with `phpize` and `php-config` from that PHP installation.
+
+For NTS, install libstatgrab first (package names are under From source), then:
 
 ```sh
 pie install iliaal/statgrab
@@ -52,7 +56,9 @@ Then add `extension=statgrab` to your `php.ini`.
 
 ### PECL
 
-statgrab is also on PECL:
+[PECL](https://pecl.php.net/package/statgrab) has its own release history.
+Its latest stable release is 2.2.0, so this command does not install the
+current GitHub or Packagist release:
 
 ```sh
 pecl install statgrab
