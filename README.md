@@ -44,7 +44,7 @@ statgrab calls libstatgrab in-process. libstatgrab handles the per-OS path (Linu
 The [Packagist package](https://packagist.org/packages/iliaal/statgrab)
 currently allows PIE installation on non-thread-safe PHP (NTS) only.
 For thread-safe PHP (ZTS), use the [bundled source build](#bundled-libstatgrab-statically-linked-leak-fixed)
-with `phpize` and `php-config` from that PHP installation.
+and its explicit PHP tool paths.
 
 For NTS, install libstatgrab first (package names are under From source), then:
 
@@ -102,6 +102,17 @@ C compiler, Make, and PHP development tools (on Debian/Ubuntu, install
   ./configure --enable-static --disable-shared --without-ncurses --with-pic && make)
 phpize
 ./configure --with-statgrab=bundled
+make
+```
+
+For a non-default PHP installation, including ZTS when an NTS PHP is on
+`PATH`, build the bundled library as above, then select both PHP tools from
+the target installation. Replace `/tmp/php-zts` with that installation's
+prefix; this example uses the prefix and configure flags from the ZTS CI job:
+
+```sh
+/tmp/php-zts/bin/phpize
+./configure --with-statgrab=bundled --with-php-config=/tmp/php-zts/bin/php-config
 make
 ```
 
