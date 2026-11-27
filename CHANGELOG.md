@@ -6,6 +6,8 @@ this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [2.3.3] - 2026-11-27
+
 ### Security
 
 - Bundled libstatgrab: `sg_network_stats_diff()` and `sg_diskio_stats_diff()` (and `Statgrab::network(true)` / `Statgrab::disks(true)`) used freed memory after a poll that found no interfaces or disks, or failed to read them, and wrote past a heap buffer when the count then grew from zero to one. Fixed by updating to libstatgrab 0.92.2 (GHSA-89gf-hjq6-43hf, GHSA-p29q-x496-4gjf).
@@ -124,7 +126,8 @@ this project adheres to [Semantic Versioning](https://semver.org).
   `.release-config` and CI for safety against system libstatgrab
   shipping the unpatched library.
 
-[Unreleased]: https://github.com/iliaal/statgrab/compare/2.3.2...HEAD
+[Unreleased]: https://github.com/iliaal/statgrab/compare/2.3.3...HEAD
+[2.3.3]: https://github.com/iliaal/statgrab/releases/tag/2.3.3
 [2.3.2]: https://github.com/iliaal/statgrab/releases/tag/2.3.2
 [2.3.1]: https://github.com/iliaal/statgrab/releases/tag/2.3.1
 [2.3.0]: https://github.com/iliaal/statgrab/releases/tag/2.3.0
