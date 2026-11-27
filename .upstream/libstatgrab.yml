@@ -1,11 +1,11 @@
 # /release-ext library-freshness gate. Schema: ~/.claude/commands/release-ext.md
 # detected from vendor/libstatgrab/configure.ac (AC_INIT)
 
-pinned: 0.92.1
+pinned: 0.92.2
 vendored_at: vendor/libstatgrab
 resolver: github
 repo: libstatgrab/libstatgrab
 # Upstream tags as LIBSTATGRAB_0_92_1, not vX.Y.Z. tag_regex pulls
 # the underscored version; the gate normalizes _ -> .
 tag_regex: "LIBSTATGRAB_(.+)"
-note: "0.92.1 + LOCAL_PATCHES.md (sg_destroy_globals off-by-one, compute_diff bitmap size, sessid init, unsigned shifts, Linux cmdline title walk, fs-stats mount-table error, TLS key deleted on shutdown, glibc regex lookup); upstream PRs libstatgrab/libstatgrab#141, #146, #147, #148"
+note: "0.92.2 + LOCAL_PATCHES.md (unsigned shifts, fs-stats mount-table error, TLS key deleted on shutdown, glibc regex lookup); 0001/0002/0003/0005 dropped as released in 0.92.2"

@@ -6,6 +6,15 @@ this project adheres to [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+### Security
+
+- Bundled libstatgrab: `sg_network_stats_diff()` and `sg_diskio_stats_diff()` (and `Statgrab::network(true)` / `Statgrab::disks(true)`) used freed memory after a poll that found no interfaces or disks, or failed to read them, and wrote past a heap buffer when the count then grew from zero to one. Fixed by updating to libstatgrab 0.92.2 (GHSA-89gf-hjq6-43hf, GHSA-p29q-x496-4gjf).
+
+### Changed
+
+- Bundled libstatgrab is now 0.92.2. The four local patches it released upstream are dropped; four local-only patches remain.
+- Bundled libstatgrab: a diff call whose counter refresh fails now returns the error instead of a diff against the cleared sample, and the next call returns totals, as a first call does.
+
 ## [2.3.2] - 2026-11-20
 
 ### Fixed

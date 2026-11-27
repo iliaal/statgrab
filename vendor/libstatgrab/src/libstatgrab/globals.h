@@ -17,9 +17,7 @@
  * Lesser General Public License for more details.
  * 
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA.
+ * License along with this library; if not, see <https://www.gnu.org/licenses/>.
  */
 
 #ifndef STATGRAB_GLOBALS_H
@@ -388,7 +386,10 @@ void *sg_comp_get_tls(unsigned id);
 				goto err_out;		\
 							\
 			TRACE_LOG(#comp, "calling " #getfn "(NULL)"); \
-			getfn(NULL);			\
+			if( ( NULL == getfn(NULL) ) && ( SG_ERROR_NONE != sg_get_error() ) ) { \
+				sg_vector_free( last );	\
+				goto err_out;		\
+			}				\
 							\
 			rc = sg_vector_compute_diff(&comp##_glob->comp##_vectors[diffidx], comp##_glob->comp##_vectors[nowidx], last); \
 			sg_vector_free( last );		\

@@ -1,6 +1,6 @@
 --- a/src/libstatgrab/globals.c
 +++ b/src/libstatgrab/globals.c
-@@ -69,6 +69,15 @@ static void sg_destroy_main_globals(void);
+@@ -67,6 +67,15 @@ static void sg_destroy_main_globals(void
  # if defined(HAVE_PTHREAD)
  #  include <pthread.h>
  static pthread_key_t glob_key;
@@ -16,7 +16,7 @@
  #  ifdef NEED_PTHREAD_ONCE_INIT_BRACES
  static pthread_once_t once_control = { PTHREAD_ONCE_INIT };
  #  else
-@@ -189,9 +198,6 @@ sg_first_init(void)
+@@ -187,9 +196,6 @@ sg_first_init(void)
  	pthread_mutexattr_t attr;
  	int rc;
  
@@ -26,7 +26,7 @@
  	rc = pthread_mutexattr_init(&attr);
  	if( 0 != rc )
  		abort();
-@@ -226,6 +232,8 @@ sg_destroy_main_globals(void)
+@@ -224,6 +230,8 @@ sg_destroy_main_globals(void)
  #if defined(ENABLE_THREADS)
  # if defined(HAVE_PTHREAD)
  	char *glob_buf;
@@ -35,7 +35,7 @@
  	while( NULL != ( glob_buf = pthread_getspecific(glob_key) ) )
  		sg_destroy_globals(glob_buf);
  # elif defined(WIN32)
-@@ -259,6 +267,13 @@ sg_comp_init(int ignore_init_errors) {
+@@ -257,6 +265,13 @@ sg_comp_init(int ignore_init_errors) {
  	sg_global_lock();
  	if( 0 != initialized++ )
  		return sg_global_unlock();
@@ -49,7 +49,7 @@
  #endif
  
  	atexit((void (*)(void))sg_destroy_main_globals);
-@@ -405,6 +420,10 @@ sg_comp_destroy(void) {
+@@ -403,6 +418,10 @@ sg_comp_destroy(void) {
  	}
  	free( required_locks );
  	num_required_locks = 0;
@@ -60,7 +60,7 @@
  #endif
  
  #ifdef ENABLE_THREADS
-@@ -507,6 +526,8 @@ sg_comp_get_tls(unsigned id) {
+@@ -505,6 +524,8 @@ sg_comp_get_tls(unsigned id) {
  #ifdef ENABLE_THREADS
  	char *glob_buf;
  # if defined(HAVE_PTHREAD)

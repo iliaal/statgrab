@@ -63,8 +63,8 @@ Out of scope:
 
 - Vulnerabilities in libstatgrab itself. For system builds, report to
   the libstatgrab project and update your system package. The bundled
-  build statically links a pinned libstatgrab and carries local patches,
-  mostly upstream fixes that are not yet released (see
+  build statically links a pinned libstatgrab and carries local patches
+  that are not in an upstream release (see
   `vendor/libstatgrab/LOCAL_PATCHES.md`).
 - The telemetry values themselves. System counters reflecting real host
   state (process lists, logged-in users, interface stats) are the

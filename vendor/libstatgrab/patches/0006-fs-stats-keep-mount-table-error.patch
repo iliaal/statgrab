@@ -1,6 +1,6 @@
 --- a/src/libstatgrab/disk_stats.c
 +++ b/src/libstatgrab/disk_stats.c
-@@ -1227,7 +1227,14 @@ sg_get_fs_stats_int(sg_vector **fs_stats_vector_ptr){
+@@ -1225,7 +1225,14 @@ sg_get_fs_stats_int(sg_vector **fs_stats
  
  	memset( valid, 0, sizeof(valid) );
  

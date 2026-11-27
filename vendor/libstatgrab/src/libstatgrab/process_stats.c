@@ -17,9 +17,7 @@
  * Lesser General Public License for more details.
  * 
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA.
+ * License along with this library; if not, see <https://www.gnu.org/licenses/>.
  */
 
 #define __NEED_SG_GET_SYS_PAGE_SIZE
@@ -44,11 +42,7 @@ static void sg_process_stats_item_init(sg_process_stats *d) {
 
 	d->process_name = NULL;
 	d->proctitle = NULL;
-	/* sessid is only assigned by the kinfo_proc backends (BSD/Darwin). The
-	 * Linux/Solaris/HP-UX/AIX backends never parse a session id, so without
-	 * this the field would hand allocator-provided heap bytes back to the
-	 * caller as the session id (uninitialised-value disclosure). */
-	d->sessid = 0;
+	d->sessid = 0; /* not every backend provides a session id */
 }
 
 #if 0
@@ -263,12 +257,7 @@ adjust_procname_cmndline(char *proctitle, size_t len) {
 #if defined(DARWIN)
 	pt = p = proctitle + sizeof(int);;
 #elif defined(LINUX)
-	/* Linux /proc/PID/cmdline is a plain NUL-separated argv buffer with no
-	 * leading char *[] pointer table. Reinterpreting its first bytes as a
-	 * pointer feeds fully caller-controlled data into the walk below; an
-	 * exact "buffer end" value drives it out of bounds. Start at the buffer
-	 * instead - for every real cmdline the pointer branch already fell
-	 * through to this, so behaviour is unchanged for legitimate input. */
+	/* Linux cmdline: plain NUL-separated argv, no leading pointer table */
 	pt = p = proctitle;
 #else
 	if(len > sizeof(p))

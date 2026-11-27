@@ -5,10 +5,10 @@ statgrab
 --SKIPIF--
 <?php
 if (PHP_OS_FAMILY !== 'Linux') die('skip Linux /proc backend only');
-/* Only the bundled, statically linked copy carries the sessid fix; a shared
- * system libstatgrab 0.92.1 still returns uninitialised heap bytes. */
+/* A shared system libstatgrab older than 0.92.2 still returns uninitialised
+ * heap bytes; the bundled, statically linked copy has the fix. */
 if (preg_match('~/libstatgrab\.so~', (string) @file_get_contents('/proc/self/maps'))) {
-    die('skip needs bundled libstatgrab (vendor/libstatgrab/patches/0003)');
+    die('skip needs bundled libstatgrab (sessid fix released in 0.92.2)');
 }
 ?>
 --FILE--

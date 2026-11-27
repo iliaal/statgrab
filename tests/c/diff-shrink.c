@@ -1,6 +1,7 @@
-/* Linux-only regression driver for sg_vector_compute_diff(): serves a
+/* Linux-only regression driver for libstatgrab's diff vectors: serves a
  * crafted /proc/net/dev through --wrap=fopen so the interface count can
- * shrink from above 32 to below it between two diff polls. */
+ * shrink from above 32 to below it between two diff polls, then drop to
+ * zero and grow back to one. */
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,7 +36,9 @@ static int is_survivor(int idx)
 	return 0;
 }
 
-static void serve(int only_survivors, unsigned long long bump)
+enum serve_set { SERVE_ALL, SERVE_SURVIVORS, SERVE_NONE, SERVE_FIRST };
+
+static void serve(enum serve_set set, unsigned long long bump)
 {
 	size_t off = 0;
 	int n;
@@ -45,7 +48,8 @@ static void serve(int only_survivors, unsigned long long bump)
 		" face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed\n");
 	off = (size_t)n;
 	for (int i = 0; i < TOTAL; i++) {
-		if (only_survivors && !is_survivor(i)) {
+		if (set == SERVE_NONE || (set == SERVE_FIRST && i != 0)
+		    || (set == SERVE_SURVIVORS && !is_survivor(i))) {
 			continue;
 		}
 		n = snprintf(proc_net_dev + off, sizeof(proc_net_dev) - off,
@@ -65,9 +69,12 @@ static int check(const char *tag, const sg_network_io_stats *s, size_t n,
 {
 	int bad = 0;
 
-	if (s == NULL) {
+	if (s == NULL && (want_n != 0 || sg_get_error() != SG_ERROR_NONE)) {
 		printf("FAIL: %s returned NULL (%s)\n", tag, sg_str_error(sg_get_error()));
 		return 1;
+	}
+	if (s == NULL) {
+		n = 0;
 	}
 	if (n != want_n) {
 		printf("FAIL: %s entries=%zu, want %zu\n", tag, n, want_n);
@@ -95,25 +102,46 @@ int main(void)
 		return 1;
 	}
 
-	serve(0, 0);
+	serve(SERVE_ALL, 0);
 	s = sg_get_network_io_stats_diff(&n);
 	if (s == NULL || n != TOTAL) {
 		printf("FAIL: seed diff entries=%zu, want %d\n", n, TOTAL);
 		bad = 1;
 	}
 
-	serve(0, 100);
+	serve(SERVE_ALL, 100);
 	s = sg_get_network_io_stats_diff(&n);
 	bad |= check("full diff", s, n, TOTAL, 100);
 
-	serve(1, 107);
+	serve(SERVE_SURVIVORS, 107);
 	s = sg_get_network_io_stats_diff(&n);
 	bad |= check("shrunk diff", s, n, SURVIVORS, 7);
+
+	/* An empty refresh used to leave the diff pointing at a freed vector,
+	 * and the zero-item vector created next claimed room for one item. */
+	serve(SERVE_NONE, 0);
+	s = sg_get_network_io_stats_diff(&n);
+	bad |= check("empty diff", s, n, 0, 0);
+
+	serve(SERVE_NONE, 0);
+	s = sg_get_network_io_stats_diff(&n);
+	bad |= check("second empty diff", s, n, 0, 0);
+
+	serve(SERVE_FIRST, 200);
+	s = sg_get_network_io_stats_diff(&n);
+	if (s == NULL || n != 1 || s[0].rx != 1200 || s[0].tx != 2200) {
+		printf("FAIL: regrown diff entries=%zu, want 1 row of totals\n", s ? n : 0);
+		bad = 1;
+	}
+
+	serve(SERVE_FIRST, 205);
+	s = sg_get_network_io_stats_diff(&n);
+	bad |= check("one-item diff", s, n, 1, 5);
 
 	sg_shutdown();
 
 	if (!bad) {
-		printf("OK: %d -> %zu interfaces\n", TOTAL, SURVIVORS);
+		printf("OK: %d -> %zu -> 0 -> 1 interfaces\n", TOTAL, SURVIVORS);
 	}
 	return bad;
 }

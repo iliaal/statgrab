@@ -17,9 +17,7 @@
  * Lesser General Public License for more details.
  * 
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA.
+ * License along with this library; if not, see <https://www.gnu.org/licenses/>.
  */
 
 #include "tools.h"
@@ -110,7 +108,7 @@ sg_vector_create_int(size_t block_shift, size_t alloc_count, size_t initial_used
 #endif
 		vector->info = *info;
 		vector->block_shift = block_shift;
-		vector->alloc_count = 1LU << block_shift;
+		vector->alloc_count = round_count;
 		vector->used_count = 0;
 
 		sg_vector_init_new(vector, initial_used);
@@ -231,6 +229,8 @@ sg_vector_clone_into_int(sg_vector **dest, const sg_vector *src){
 	assert(src->info.copy_fn);
 
 	if( !tmp ) {
+		/* sg_vector_resize() freed *dest: on error, or because src is empty */
+		*dest = NULL;
 		RETURN_FROM_PREVIOUS_ERROR( "vector", sg_get_error() );
 	}
 
@@ -344,10 +344,7 @@ sg_vector_compute_diff(sg_vector **dest_vector_ptr, const sg_vector *cur_vector,
 		    ( SG_ERROR_NONE == sg_prove_vector(last_vector) ) &&
 		    ( SG_ERROR_NONE == sg_prove_vector_compat(cur_vector, last_vector ) ) ) {
 			size_t i, item_size = last_vector->info.item_size;
-			/* matched[] is indexed by j over last_vector's items (see the
-			 * inner loop below), so it must be sized from last_vector's
-			 * count. Sizing it from cur_vector let a shrunken current item
-			 * set walk the bitmap past the end of the stack VLA. */
+			/* indexed by j, i.e. over last_vector's items */
 			unsigned matched[(last_vector->used_count / (8 * sizeof(unsigned))) + 1];
 
 			char *diff = VECTOR_DATA(*dest_vector_ptr);

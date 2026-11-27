@@ -13,7 +13,7 @@
 AC_PREREQ([2.69])
 
 # Change these to change the package name and version
-AC_INIT([libstatgrab],[0.92.1],[https://libstatgrab.org/issues],[],[https://libstatgrab.org/])
+AC_INIT([libstatgrab],[0.92.2],[https://libstatgrab.org/issues],[],[https://libstatgrab.org/])
 AC_CONFIG_SRCDIR([src/libstatgrab/cpu_stats.c])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
@@ -146,7 +146,7 @@ AC_CHECK_DECLS([strlcat, strlcpy], , , [AC_INCLUDES_DEFAULT()])
 AS_IF([test "x${ac_cv_func_setvbuf}" != "xyes"], [AC_CHECK_FUNCS([setlinebuf])])
 
 # Check for some additional headers
-AC_CHECK_HEADERS([fcntl.h inttypes.h libgen.h limits.h netdb.h regex.h sched.h signal.h stdint.h sys/ioctl.h sys/socket.h sys/statvfs.h sys/unistd.h])
+AC_CHECK_HEADERS([fcntl.h inttypes.h libgen.h limits.h netdb.h regex.h sched.h signal.h stdint.h sys/file.h sys/ioctl.h sys/socket.h sys/statvfs.h sys/unistd.h])
 
 AC_CHECK_DECL([F_SETLK], [AC_DEFINE([HAVE_DECL_F_SETLK], 1, [define when F_SETLK is declared])], ,[
 AC_INCLUDES_DEFAULT

@@ -27,13 +27,11 @@ violations. sg_error_details() returns array{code,errno,message,arg}
 from libstatgrab (or false when no error is pending); the OO surface
 exposes the same shape via Statgrab::errorDetails().
 
-The repo also ships a vendored libstatgrab 0.92.1 with local
-patches for an sg_destroy_globals off-by-one that leaks the
-user-stats vector at process exit, a stack buffer overflow in the
-diff getters when the device count shrinks, uninitialised process
-session IDs, and a heap buffer overflow when parsing Linux process
-command lines (none in an upstream release yet), plus a local fix
-for two undefined shifts. Configure with --with-statgrab=bundled
+The repo also ships a vendored libstatgrab 0.92.2, which fixes
+memory-safety bugs that distribution 0.92.1 packages still carry,
+with local patches for two undefined shifts, a lost mount-table
+error, a crash when a thread exits after the extension unloads, and
+regex lookups that resolve to oniguruma instead of glibc. Configure with --with-statgrab=bundled
 to statically link the patched copy without waiting on system
 packages.
 

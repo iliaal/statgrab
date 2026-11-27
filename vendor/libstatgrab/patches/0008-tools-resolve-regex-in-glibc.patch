@@ -1,6 +1,6 @@
 --- a/configure.ac
 +++ b/configure.ac
-@@ -133,6 +133,9 @@ AS_IF([test -n "$XOPEN_SOURCE_CPPFLAGS"], [CPPFLAGS="$CPPFLAGS $XOPEN_SOURCE_CPP
+@@ -133,6 +133,9 @@ AS_IF([test -n "$XOPEN_SOURCE_CPPFLAGS"]
  dnl Checks for inet libraries:
  AC_SEARCH_LIBS(gethostent, [nsl])
  AC_SEARCH_LIBS(setsockopt, [socket net network])
@@ -12,7 +12,7 @@
  # Checks for library functions
 --- a/src/libstatgrab/tools.c
 +++ b/src/libstatgrab/tools.c
-@@ -770,3 +770,55 @@ sg_log_init(const char *properties_pfx, const char *env_name, const char *argv0)
+@@ -768,3 +768,55 @@ sg_log_init(const char *properties_pfx,
  	log4cplus_basic_configure();
  }
  #endif
@@ -70,7 +70,7 @@
 +#endif
 --- a/src/libstatgrab/tools.h
 +++ b/src/libstatgrab/tools.h
-@@ -524,6 +524,17 @@ __sg_private char *sg_get_string_match(char *line, regmatch_t *match);
+@@ -525,6 +525,17 @@ __sg_private char *sg_get_string_match(c
  __sg_private char *sg_f_read_line(FILE *f, char *linebuf, size_t buf_size, const char *string);
  #endif
  
@@ -87,3 +87,4 @@
 +
  #if defined(__NEED_SG_GET_SYS_PAGE_SIZE)
  static ssize_t sys_page_size;
+ 

@@ -17,9 +17,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA.
+ * along with this library; if not, see <https://www.gnu.org/licenses/>.
  */
 
 #include <stdio.h>
@@ -75,7 +73,7 @@ int main(int argc, char **argv){
 		total = mem_stats->total + swap_stats->total;
 		free = mem_stats->free + swap_stats->free;
 
-		printf("Total VM usage : %5.2f%%\n", 100 - (((float)total/(float)free)));
+		printf("Total VM usage : %5.2f%%\n", 100 - (100*((float)free/(float)total)));
 	}
 	else {
 		sg_die("Unable to get VM stats", 1);

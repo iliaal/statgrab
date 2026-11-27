@@ -17,9 +17,7 @@
  * Lesser General Public License for more details.
  * 
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA.
+ * License along with this library; if not, see <https://www.gnu.org/licenses/>.
  */
 
 #ifndef STATGRAB_TOOLS_H
@@ -139,6 +137,9 @@ typedef bool _Bool;
 
 #ifdef HAVE_FCNTL_H
 # include <fcntl.h>
+#endif
+#ifdef HAVE_SYS_FILE_H
+# include <sys/file.h>
 #endif
 
 #ifdef HAVE_DIRENT_H

@@ -1,9 +1,14 @@
-# Local patches against vendored libstatgrab 0.92.1
+# Local patches against vendored libstatgrab 0.92.2
 
-Pristine source is `libstatgrab-0.92.1.tar.gz` from
-https://github.com/libstatgrab/libstatgrab/releases/tag/LIBSTATGRAB_0_92_1
+Pristine source is `libstatgrab-0.92.2.tar.gz` from
+https://github.com/libstatgrab/libstatgrab/releases/tag/LIBSTATGRAB_0_92_2
 (SHA-256 of release tarball, recorded for tamper detection: see
-`patches/SHA256SUMS`).
+`patches/SHA256SUMS`; the detached `.asc` signatures by keys
+`4AD86566CAD03297A9804702A12F416AA37F3BD7` and
+`4BD95F908A5040E8D26CD6816C226B37FDF38D55` verified on 2026-11-27).
+The tracked tree is that tarball minus its generated autotools output
+(`configure`, `aclocal.m4`, `config.h.in`, `install-sh`,
+`ltmain.sh`, `missing`), with the patches below applied in order.
 
 Modifications below are required at LGPL 2.1 §2(a) "carry prominent
 notices stating that you changed the files and the date of any change."
@@ -11,85 +16,6 @@ The patched files retain their LGPL 2.1+ headers; the patch chunks
 themselves are also LGPL 2.1+.
 
 ## Active patches
-
-### 0001-fix-sg-destroy-globals-off-by-one.patch (2026-04-27)
-
-`src/libstatgrab/globals.c` — `sg_destroy_globals()` walked components
-with `size_t i = lengthof(comp_info) - 1; while (i--) { ... }`. The
-post-decrement-in-test pattern starts the body with `i = N-2`, so the
-final component (index `N-1`, which is `sg_user_init`) never has its
-`cleanup_fn` called. Result: the `user_stats` vector and every string
-it owns (login_name, device, hostname, record_id) leak at process exit.
-
-Fix: start `i = lengthof(comp_info)` so the body runs with `i = N-1`
-through `i = 0`. Compute `zero_size` from `last_idx = N-1` separately.
-
-Reproducer (under ASan, before patch):
-
-```c
-sg_init(1);
-size_t n;
-sg_get_user_stats(&n);
-sg_shutdown();
-```
-
-→ `Direct leak of 1112 byte(s) ... sg_get_user_stats / sg_vector_create
-/ sg_realloc`. Same shape against `sg_get_host_info`, `sg_get_load_stats`,
-or any function that exercises `sg_user_init`'s vector.
-
-After patch: zero leaks reported.
-
-Upstream: https://github.com/libstatgrab/libstatgrab/pull/141, merged
-to master as 97885479a7c228d2d2d64e13f5177c1cec8e99b3 (2026-08-13) but not
-in a release yet (latest is 0.92.1). Drop this patch once statgrab
-re-vendors a release that includes it.
-
-### 0002-vector-size-compute-diff-bitmap-from-last-vector.patch (2026-10-13)
-
-`src/libstatgrab/vector.c` — `sg_vector_compute_diff()` sized its stack
-`matched[]` bitmap from `cur_vector->used_count` but indexes it with `j`
-over `last_vector->used_count`. When the item count shrinks across a
-32-item word boundary between two diff polls (a network interface or
-disk removed), `BIT_ISSET` reads and `BIT_SET` writes past the end of
-the stack VLA. Reachable from `sg_get_network_io_stats_diff()`,
-`sg_get_disk_io_stats_diff()`, and `sg_get_fs_stats_diff()`; in PHP,
-from `sg_network_stats_diff()`, `sg_diskio_stats_diff()`,
-`Statgrab::network(true)`, and `Statgrab::disks(true)`.
-
-Fix: size the bitmap from `last_vector->used_count`, the range `j`
-actually spans.
-
-Reproducer: `tests/c/diff-shrink.sh` serves 40 interfaces through a
-wrapped `/proc/net/dev`, then 5. Against an ASan+UBSan build with this
-patch reverted it stops with `vector.c:357: runtime error: index 1 out
-of bounds for type 'unsigned int [*]'` (without UBSan, ASan reports a
-`dynamic-stack-buffer-overflow` in `sg_vector_compute_diff`); with the
-patch it reports the 5 surviving interfaces with correct deltas.
-
-Upstream: https://github.com/libstatgrab/libstatgrab/pull/148. Drop this
-patch once upstream merges it and statgrab re-vendors a release that
-includes it.
-
-### 0003-process-stats-initialise-sessid.patch (2026-10-13)
-
-`src/libstatgrab/process_stats.c` — `sg_process_stats_item_init()` left
-`sessid` unset. Only the kinfo_proc backends (BSD/Darwin) assign it;
-the Linux, Solaris, HP-UX, and AIX backends never do, and the stats
-vector is allocated without zeroing. `session_id` in
-`sg_process_stats()` rows therefore carried leftover heap bytes on
-Linux, including fragments of previously freed strings.
-
-Fix: initialise `sessid` to 0 in the item init function. The BSD/Darwin
-backends still overwrite it with the real session id.
-
-Reproducer: `tests/033-process-session-id.phpt` asserts every row's
-`session_id` is 0 on Linux. Against the unpatched library it fails with
-values such as `-1094795586` (ASan's malloc fill) or arbitrary integers
-on a normal build.
-
-Upstream: https://github.com/libstatgrab/libstatgrab/pull/147. Drop this
-patch once upstream merges it and statgrab re-vendors a release that
-includes it.
 
 ### 0004-unsigned-bit-and-ethtool-speed-shifts.patch (2026-10-13)
 
@@ -113,39 +39,6 @@ Reproducer: build the bundled library and extension with
 by 16 places` (`ethtool.h`); after it they pass.
 
 Local only; not submitted upstream.
-
-### 0005-process-stats-linux-cmdline-no-pointer.patch (2026-10-14)
-
-`src/libstatgrab/process_stats.c` — on Linux, `sg_get_process_stats()`
-reads `/proc/PID/cmdline` into a heap buffer of `len + 1` bytes and
-passes it to `adjust_procname_cmndline()`, which took the first
-`sizeof(char *)` bytes of the buffer as a pointer. That is OpenBSD's
-`kern.proc.args` layout, which prepends a `char *[]` table; a Linux
-cmdline is only the NUL-separated argv strings, so those bytes belong to
-the monitored process. When they equal the address `buffer + len`, the
-range check passes and sets `len` to 0, which turns the rewrite loop's
-`|| !len` arm on and drops its bound: the loop reads past the buffer,
-turns NUL bytes in the adjacent heap memory into spaces, and writes a
-final NUL wherever it stops. For an ordinary cmdline the decoded value
-fails the check, so the walk already started at the buffer and the fix
-leaves its titles unchanged.
-
-Fix: on Linux, start the walk at the buffer. For the other
-`KERN_PROC_ARGS`/AIX backends that still decode the pointer, the check
-now also rejects values below the buffer and the exact end of it.
-
-Reproducer: `tests/c/cmdline-title.sh` serves this process's own
-`/proc/PID/cmdline` through `--wrap=open`, and `--wrap=sg_realloc`
-hands libstatgrab a buffer allocated in advance, so the leading
-pointer-sized bytes can name its end. Against an ASan+UBSan build with this patch
-reverted it stops with `AddressSanitizer: heap-buffer-overflow` (`READ
-of size 1` in `adjust_procname_cmndline`, `process_stats.c:280`); with
-the patch the title stays inside the buffer and an ordinary argv still
-reads `statgrab-cmdline --flag`.
-
-Upstream: https://github.com/libstatgrab/libstatgrab/pull/146. Drop this
-patch once upstream merges it and statgrab re-vendors a release that
-includes it.
 
 ### 0006-fs-stats-keep-mount-table-error.patch (2026-11-19)
 
@@ -213,3 +106,24 @@ own failing regex functions. Without the patch it reports `network
 rows=0` and 18 foreign regex calls; with it, real rows and 0 foreign calls.
 
 Local only; not submitted upstream.
+
+## Dropped patches
+
+Released upstream in 0.92.2 with the same code, so dropped when re-vendoring
+it on 2026-11-27. The numbers stay retired so references to them in the
+CHANGELOG and tests remain unambiguous.
+
+- 0001-fix-sg-destroy-globals-off-by-one: upstream 97885479 (PR #141).
+- 0002-vector-size-compute-diff-bitmap-from-last-vector: upstream fb9cf695
+  (PR #148). `tests/c/diff-shrink.sh` still covers it.
+- 0003-process-stats-initialise-sessid: upstream 3922b3f5 (PR #147).
+  `tests/033-process-session-id.phpt` still covers it.
+- 0005-process-stats-linux-cmdline-no-pointer: upstream bfb3dab8 (PR #146).
+  `tests/c/cmdline-title.sh` still covers it.
+
+0.92.2 also fixes two diff-vector bugs that no local patch carried, both
+reachable from `sg_network_stats_diff()` and `sg_diskio_stats_diff()`:
+a use-after-free after an empty or failed refresh (319fc05b,
+GHSA-89gf-hjq6-43hf) and a heap overflow when a zero-item diff vector grows
+to one item (444af296, GHSA-p29q-x496-4gjf). `tests/c/diff-shrink.sh` covers
+both.
