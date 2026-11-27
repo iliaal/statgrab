@@ -245,10 +245,13 @@ after another thread's `sg_set_valid_filesystems()` call.
 ```php
 $sg = new Statgrab();
 $sg->cpu();                                // cpu(int $source = Statgrab::CPU_PERCENT_ENTIRE): array|false
+$sg->cpuStats();                           // array|false: cumulative jiffies, as sg_cpu_totals()
+$sg->cpuDiff();                            // array|false: jiffies since the previous CPU sample, as sg_cpu_diff()
 $sg->host();
 $sg->memory();
 $sg->processes(Statgrab::SORT_CPU, 10);    // processes(?int $sort_order = null, int $num_entries = 0): array|false
 $sg->disks(diff: true);
+$sg->filesystems();                        // array|false: mounted filesystems, as sg_fs_stats()
 $sg->load();                               // load(): array|false
 $sg->swap();                               // swap(): array|false
 $sg->network(diff: true);                  // network(bool $diff = false): array|false
